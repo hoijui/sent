@@ -5,9 +5,10 @@ A simple plaintext presentation tool.
 
 sent does not need latex, libreoffice or any other fancy file format, it uses
 plaintext files. Every line represents a slide in the presentation. This may
-limit the use, but for presentations using the Takahashi method this is very
-nice and allows you to write down the presentation for a quick lightning talk
-within a few minutes.
+limit the use, but for presentations using the [Takahashi
+method](https://en.wikipedia.org/wiki/Takahashi_method) this is very nice and
+allows you to write down the presentation for a quick lightning talk within a
+few minutes.
 
 The presentation is displayed in a simple X11 window colored black on white for
 maximum contrast even if the sun shines directly onto the projected image. The

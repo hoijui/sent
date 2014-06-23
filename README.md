@@ -46,6 +46,7 @@ this:
 	no bloat
 	how?
 	sent FILENAME
+	one slide per line
 	thanks / questions?
 
 future features

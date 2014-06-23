@@ -29,7 +29,7 @@ sent: ${OBJ}
 
 cscope: ${SRC} config.h
 	@echo cScope
-	@cscope -R -b
+	@cscope -R -b || echo cScope not installed
 
 clean:
 	@echo cleaning

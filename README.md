@@ -23,7 +23,14 @@ To get a little demo, just type
 
 	make && ./sent example
 
-You can navigate with the arrow keys and quit with `q`.
+You can navigate with the arrow keys and quit with `q`. If you get
+
+	sent: could not find a scalable font matching -*-dejavu sans condensed-bold-r-*-*-0-0-*-*-*-0-*-*
+
+you should add the dejavu fonts dir (customize path to fit your distribution)
+with:
+
+	xset fp+ /usr/share/fonts/dejavu
 
 Configuration
 -------------

@@ -15,6 +15,15 @@ content of each slide is automatically scaled to fit the window so you don't
 have to worry about alignment. Instead you can really concentrate on the
 content.
 
+Demo
+----
+
+To get a little demo, just type
+
+	make && ./sent example
+
+You can navigate with the arrow keys and quit with `q`.
+
 Usage
 -----
 

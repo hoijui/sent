@@ -25,6 +25,12 @@ To get a little demo, just type
 
 You can navigate with the arrow keys and quit with `q`.
 
+Configuration
+-------------
+
+Edit config.h to fit your needs. The font has to be in the X servers font path,
+see `man xset` for how to add it.
+
 Usage
 -----
 

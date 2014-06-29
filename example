@@ -1,9 +1,11 @@
 sent
 why?
+@nyan.png
 easy to use
-few dependencies (X11)
+depends on Xlib, libpng
 no bloat
 how?
 sent FILENAME
 one slide per line
+ @FILE.png
 thanks / questions?

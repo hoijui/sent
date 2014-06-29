@@ -1,8 +1,10 @@
 /* See LICENSE for licence details. */
 #include <errno.h>
 #include <math.h>
+#include <png.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <X11/keysym.h>
@@ -19,8 +21,27 @@ char *argv0;
 #define LEN(a)     (sizeof(a) / sizeof(a)[0])
 #define LIMIT(x, a, b)    (x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x)
 
+typedef enum {
+	NONE = 0,
+	LOADED = 1,
+	SCALED = 2,
+	DRAWN = 4
+} imgstate;
+
+struct image {
+	unsigned char *buf;
+	unsigned int bufwidth, bufheight;
+	imgstate state;
+	XImage *ximg;
+	FILE *f;
+	png_structp png_ptr;
+	png_infop info_ptr;
+	int numpasses;
+};
+
 typedef struct {
-	char* text;
+	char *text;
+	struct image *img;
 } Slide;
 
 /* Purely graphic info */
@@ -32,6 +53,7 @@ typedef struct {
 	XSetWindowAttributes attrs;
 	int scr;
 	int w, h;
+	int uw, uh; /* usable dimensions for drawing text and images */
 } XWindow;
 
 /* Drawing Context linked list*/
@@ -60,12 +82,11 @@ typedef struct {
 	const Arg arg;
 } Shortcut;
 
-/* function definitions used in config.h */
-static void advance(const Arg *);
-static void quit(const Arg *);
-
-/* config.h for applying patches and the configuration. */
-#include "config.h"
+static struct image *pngopen(char *filename);
+static int pngread(struct image *img);
+static int pngprepare(struct image *img);
+static void pngscale(struct image *img);
+static void pngdraw(struct image *img);
 
 static Bool xfontisscalable(char *name);
 static XFontStruct *xloadqueryscalablefont(char *name, int size);
@@ -75,6 +96,7 @@ static void eprintf(const char *, ...);
 static void load(FILE *fp);
 static void advance(const Arg *arg);
 static void quit(const Arg *arg);
+static void resize(int width, int height);
 static void run();
 static void usage();
 static void xdraw();
@@ -86,7 +108,10 @@ static void bpress(XEvent *);
 static void cmessage(XEvent *);
 static void expose(XEvent *);
 static void kpress(XEvent *);
-static void resize(XEvent *);
+static void configure(XEvent *);
+
+/* config.h for applying patches and the configuration. */
+#include "config.h"
 
 /* Globals */
 static Slide *slides = NULL;
@@ -100,11 +125,193 @@ static char *opt_font = NULL;
 static void (*handler[LASTEvent])(XEvent *) = {
 	[ButtonPress] = bpress,
 	[ClientMessage] = cmessage,
-	[ConfigureNotify] = resize,
+	[ConfigureNotify] = configure,
 	[Expose] = expose,
 	[KeyPress] = kpress,
 };
 
+struct image *pngopen(char *filename)
+{
+	FILE *f;
+	unsigned char buf[8];
+	struct image *img;
+
+	if (!(f = fopen(filename, "rb"))) {
+		eprintf("could not open file %s:", filename);
+		return NULL;
+	}
+
+	if (fread(buf, 1, 8, f) != 8 || png_sig_cmp(buf, 1, 8))
+		return NULL;
+
+	img = malloc(sizeof(struct image));
+	if (!(img->png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL,
+					NULL, NULL))) {
+		free(img);
+		return NULL;
+	}
+	if (!(img->info_ptr = png_create_info_struct(img->png_ptr))) {
+		png_destroy_read_struct(&img->png_ptr, NULL, NULL);
+		free(img);
+		return NULL;
+	}
+	if (setjmp(png_jmpbuf(img->png_ptr))) {
+		png_destroy_read_struct(&img->png_ptr, &img->info_ptr, NULL);
+		free(img);
+		return NULL;
+	}
+
+	img->f = f;
+	rewind(f);
+	png_init_io(img->png_ptr, f);
+	png_read_info(img->png_ptr, img->info_ptr);
+	img->bufwidth = png_get_image_width(img->png_ptr, img->info_ptr);
+	img->bufheight = png_get_image_height(img->png_ptr, img->info_ptr);
+
+	return img;
+}
+
+int pngread(struct image *img)
+{
+	unsigned int y;
+	png_bytepp row_pointers;
+
+	if (!img)
+		return 0;
+
+	if (img->state & LOADED)
+		return 2;
+
+	if (img->buf)
+		free(img->buf);
+	if (!(img->buf = malloc(3 * img->bufwidth * img->bufheight)))
+		return 0;
+
+	if (setjmp(png_jmpbuf(img->png_ptr))) {
+		png_destroy_read_struct(&img->png_ptr, &img->info_ptr, NULL);
+		return 0;
+	}
+
+	{
+		int color_type = png_get_color_type(img->png_ptr, img->info_ptr);
+		int bit_depth = png_get_bit_depth(img->png_ptr, img->info_ptr);
+		if (color_type == PNG_COLOR_TYPE_PALETTE)
+			png_set_expand(img->png_ptr);
+		if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+			png_set_expand(img->png_ptr);
+		if (png_get_valid(img->png_ptr, img->info_ptr, PNG_INFO_tRNS))
+			png_set_expand(img->png_ptr);
+		if (bit_depth == 16)
+			png_set_strip_16(img->png_ptr);
+		if (color_type == PNG_COLOR_TYPE_GRAY
+				|| color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+			png_set_gray_to_rgb(img->png_ptr);
+
+		png_color_16 my_background = {.red = 0xff, .green = 0xff, .blue = 0xff};
+		png_color_16p image_background;
+
+		if (png_get_bKGD(img->png_ptr, img->info_ptr, &image_background))
+			png_set_background(img->png_ptr, image_background, PNG_BACKGROUND_GAMMA_FILE, 1, 1.0);
+		else
+			png_set_background(img->png_ptr, &my_background, PNG_BACKGROUND_GAMMA_SCREEN, 2, 1.0);
+
+		if (png_get_interlace_type(img->png_ptr, img->info_ptr) == PNG_INTERLACE_ADAM7)
+			img->numpasses = png_set_interlace_handling(img->png_ptr);
+		else
+			img->numpasses = 1;
+		png_read_update_info(img->png_ptr, img->info_ptr);
+	}
+
+	row_pointers = (png_bytepp)malloc(img->bufheight * sizeof(png_bytep));
+	for (y = 0; y < img->bufheight; y++)
+		row_pointers[y] = img->buf + y * img->bufwidth * 3;
+
+	png_read_image(img->png_ptr, row_pointers);
+	free(row_pointers);
+
+	png_destroy_read_struct(&img->png_ptr, &img->info_ptr, NULL);
+	fclose(img->f);
+	img->state |= LOADED;
+
+	return 1;
+}
+
+int pngprepare(struct image *img)
+{
+	int depth = DefaultDepth(xw.dpy, xw.scr);
+	int width = xw.uw;
+	int height = xw.uh;
+
+	if (xw.uw * img->bufheight > xw.uh * img->bufwidth)
+		width = img->bufwidth * xw.uh / img->bufheight;
+	else
+		height = img->bufheight * xw.uw / img->bufwidth;
+
+	if (depth < 24) {
+		eprintf("display depths <24 not supported.");
+		return 0;
+	}
+
+	if (!(img->ximg = XCreateImage(xw.dpy, CopyFromParent, depth, ZPixmap, 0,
+				NULL, width, height, 32, 0))) {
+		eprintf("could not create XImage");
+		return 0;
+	}
+
+	if (!(img->ximg->data = malloc(img->ximg->bytes_per_line * height))) {
+		eprintf("could not alloc data section for XImage");
+		XDestroyImage(img->ximg);
+		img->ximg = NULL;
+		return 0;
+	}
+
+	if (!XInitImage(img->ximg)) {
+		eprintf("could not init XImage");
+		free(img->ximg->data);
+		XDestroyImage(img->ximg);
+		img->ximg = NULL;
+		return 0;
+	}
+
+	pngscale(img);
+	img->state |= SCALED;
+	return 1;
+}
+
+void pngscale(struct image *img)
+{
+	unsigned int x, y;
+	unsigned int width = img->ximg->width;
+	unsigned int height = img->ximg->height;
+	char* __restrict__ newBuf = img->ximg->data;
+	unsigned char * __restrict__ ibuf;
+	unsigned int jdy = img->ximg->bytes_per_line / 4 - width;
+	unsigned int dx = (img->bufwidth << 10) / width;
+
+	for (y = 0; y < height; y++) {
+		unsigned int bufx = img->bufwidth / width;
+		ibuf = &img->buf[y * img->bufheight / height * img->bufwidth * 3];
+
+		for (x = 0; x < width; x++) {
+			*newBuf++ = (ibuf[(bufx >> 10)*3+2]);
+			*newBuf++ = (ibuf[(bufx >> 10)*3+1]);
+			*newBuf++ = (ibuf[(bufx >> 10)*3+0]);
+			newBuf++;
+			bufx += dx;
+		}
+		newBuf += jdy;
+	}
+}
+
+void pngdraw(struct image *img)
+{
+	int xoffset = (xw.w - img->ximg->width) / 2;
+	int yoffset = (xw.h - img->ximg->height) / 2;
+	XPutImage(xw.dpy, xw.win, dc.gc, img->ximg, 0, 0,
+			xoffset, yoffset, img->ximg->width, img->ximg->height);
+	XFlush(xw.dpy);
+	img->state |= DRAWN;
+}
 
 Bool xfontisscalable(char *name)
 {
@@ -177,8 +384,7 @@ struct DC *getfontsize(char *str, size_t len, int *width, int *height)
 
 	do {
 		XTextExtents(cur->font, str, len, &unused, &unused, &unused, &info);
-		if (info.width > usablewidth * xw.w
-				|| info.ascent + info.descent > usableheight * xw.h)
+		if (info.width > xw.uw || info.ascent + info.descent > xw.uh)
 			break;
 		pre = cur;
 	} while ((cur = cur->next));
@@ -245,6 +451,8 @@ void load(FILE *fp)
 			*p = '\0';
 		if (!(slides[i].text = strdup(buf)))
 			eprintf("cannot strdup %u bytes:", strlen(buf)+1);
+		if (slides[i].text[0] == '@')
+			slides[i].img = pngopen(slides[i].text + 1);
 	}
 	if (slides)
 		slides[i].text = NULL;
@@ -256,14 +464,28 @@ void advance(const Arg *arg)
 	int new_idx = idx + arg->i;
 	LIMIT(new_idx, 0, slidecount-1);
 	if (new_idx != idx) {
+		if (slides[idx].img)
+			slides[idx].img->state &= ~(DRAWN | SCALED);
 		idx = new_idx;
 		xdraw();
+		if (slidecount > idx + 1 && slides[idx + 1].img && !pngread(slides[idx + 1].img))
+			eprintf("could not read image %s", slides[idx + 1].text + 1);
+		if (0 < idx && slides[idx - 1].img && !pngread(slides[idx - 1].img))
+			eprintf("could not read image %s", slides[idx - 1].text + 1);
 	}
 }
 
 void quit(const Arg *arg)
 {
 	running = 0;
+}
+
+void resize(int width, int height)
+{
+	xw.w = width;
+	xw.h = height;
+	xw.uw = usablewidth * width;
+	xw.uh = usableheight * height;
 }
 
 void run()
@@ -274,8 +496,7 @@ void run()
 	while (1) {
 		XNextEvent(xw.dpy, &ev);
 		if (ev.type == ConfigureNotify) {
-			xw.w = ev.xconfigure.width;
-			xw.h = ev.xconfigure.height;
+			resize(ev.xconfigure.width, ev.xconfigure.height);
 		} else if (ev.type == MapNotify) {
 			break;
 		}
@@ -300,10 +521,19 @@ void xdraw()
 	int height;
 	int width;
 	struct DC *dc = getfontsize(slides[idx].text, line_len, &width, &height);
+	struct image *im = slides[idx].img;
 
 	XClearWindow(xw.dpy, xw.win);
-	XDrawString(xw.dpy, xw.win, dc->gc, (xw.w - width)/2, (xw.h + height)/2,
-			slides[idx].text, line_len);
+
+	if (!im)
+		XDrawString(xw.dpy, xw.win, dc->gc, (xw.w - width)/2, (xw.h + height)/2,
+				slides[idx].text, line_len);
+	else if (!(im->state & LOADED) && !pngread(im))
+		eprintf("could not read image %s", slides[idx].text + 1);
+	else if (!(im->state & SCALED) && !pngprepare(im))
+		eprintf("could not prepare image %s for drawing", slides[idx].text + 1);
+	else if (!(im->state & DRAWN))
+		pngdraw(im);
 }
 
 void xhints()
@@ -427,10 +657,11 @@ void kpress(XEvent *e)
 			shortcuts[i].func(&(shortcuts[i].arg));
 }
 
-void resize(XEvent *e)
+void configure(XEvent *e)
 {
-	xw.w = e->xconfigure.width;
-	xw.h = e->xconfigure.height;
+	resize(e->xconfigure.width, e->xconfigure.height);
+	if (slides[idx].img)
+		slides[idx].img->state &= ~(DRAWN | SCALED);
 	xdraw();
 }
 

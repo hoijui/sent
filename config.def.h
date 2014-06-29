@@ -26,8 +26,8 @@ static Shortcut shortcuts[] = {
 	{ XK_h,           advance,        {.i = -1} },
 	{ XK_j,           advance,        {.i = +1} },
 	{ XK_k,           advance,        {.i = -1} },
-	{ XK_Down,        advance,        {.i = +5} },
-	{ XK_Up,          advance,        {.i = -5} },
-	{ XK_Next,        advance,        {.i = +10} },
-	{ XK_Prior,       advance,        {.i = -10} },
+	{ XK_Down,        advance,        {.i = +1} },
+	{ XK_Up,          advance,        {.i = -1} },
+	{ XK_Next,        advance,        {.i = +1} },
+	{ XK_Prior,       advance,        {.i = -1} },
 };

@@ -4,8 +4,8 @@ sent
 A simple plaintext presentation tool.
 
 sent does not need latex, libreoffice or any other fancy file format, it uses
-plaintext files. Every line represents a slide in the presentation. This may
-limit the use, but for presentations using the [Takahashi
+plaintext files and png images. Every line represents a slide in the
+presentation. This may limit the use, but for presentations using the [Takahashi
 method](https://en.wikipedia.org/wiki/Takahashi_method) this is very nice and
 allows you to write down the presentation for a quick lightning talk within a
 few minutes.
@@ -43,13 +43,14 @@ Usage
 
 	sent [-f FONTSTRING] FILE1 [FILE2 ...]
 
-If one FILE equals `-`, stdin will be read. A presentation file could look like
-this:
+If one FILE equals `-`, stdin will be read. Use png images by prepending a `@`
+before the filename. A presentation file could look like this:
 
 	sent
 	why?
+	@nyan.png
 	easy to use
-	few dependencies (X11)
+	depends on Xlib, libpng
 	no bloat
 	how?
 	sent FILENAME
@@ -61,6 +62,5 @@ future features
 
 * utf8 support
 * second window for speakers laptop (progress, time, notes?)
-* images
 * multiple lines per slide?
 * markdown?

@@ -15,7 +15,7 @@ INCS = -I. -I/usr/include -I${X11INC}
 LIBS = -L/usr/lib -lc -lm -L${X11LIB} -lX11 -lpng
 
 # flags
-CPPFLAGS = -DVERSION=\"${VERSION}\" -D_BSD_SOURCE -D_XOPEN_SOURCE=600
+CPPFLAGS = -DVERSION=\"${VERSION}\" -D_XOPEN_SOURCE=600
 CFLAGS += -g -std=c99 -pedantic -Wall ${INCS} ${CPPFLAGS}
 LDFLAGS += -g ${LIBS}
 #CFLAGS += -std=c99 -pedantic -Wall -Os ${INCS} ${CPPFLAGS}

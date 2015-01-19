@@ -44,7 +44,8 @@ Usage
 	sent [-f FONTSTRING] FILE1 [FILE2 ...]
 
 If one FILE equals `-`, stdin will be read. Use png images by prepending a `@`
-before the filename. A presentation file could look like this:
+before the filename. Lines starting with `#` will be ignored. A presentation
+file could look like this:
 
 	sent
 	why?
@@ -55,6 +56,9 @@ before the filename. A presentation file could look like this:
 	how?
 	sent FILENAME
 	one slide per line
+	# This is a comment and will not be part of the presentation
+	# The next line starts with a whitespace, it will not produce an image slide
+	 @FILE.png
 	thanks / questions?
 
 future features

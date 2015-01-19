@@ -7,6 +7,7 @@ no bloat
 how?
 sent FILENAME
 one slide per line
-# comments
+# This is a comment and will not be part of the presentation
+# The next line starts with a whitespace, it will not produce an image slide
  @FILE.png
 thanks / questions?

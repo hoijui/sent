@@ -6,7 +6,7 @@ include config.mk
 SRC = sent.c
 OBJ = ${SRC:.c=.o}
 
-all: options sent cscope
+all: options sent
 
 options:
 	@echo sent build options:

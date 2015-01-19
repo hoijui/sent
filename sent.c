@@ -440,19 +440,22 @@ void load(FILE *fp)
 {
 	static size_t size = 0;
 	char buf[BUFSIZ], *p;
-	size_t i;
+	size_t i = slidecount;
 
 	/* read each line from stdin and add it to the item list */
-	for (i = slidecount; fgets(buf, sizeof(buf), fp); i++) {
+	while (fgets(buf, sizeof(buf), fp)) {
 		if ((i+1) * sizeof(*slides) >= size)
 			if (!(slides = realloc(slides, (size += BUFSIZ))))
 				eprintf("cannot realloc %u bytes:", size);
+		if (*buf == '#')
+			continue;
 		if ((p = strchr(buf, '\n')))
 			*p = '\0';
 		if (!(slides[i].text = strdup(buf)))
 			eprintf("cannot strdup %u bytes:", strlen(buf)+1);
 		if (slides[i].text[0] == '@')
 			slides[i].img = pngopen(slides[i].text + 1);
+		i++;
 	}
 	if (slides)
 		slides[i].text = NULL;

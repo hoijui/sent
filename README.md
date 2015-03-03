@@ -64,7 +64,8 @@ file could look like this:
 future features
 ---------------
 
-* utf8 support
-* second window for speakers laptop (progress, time, notes?)
+* utf8 support (via Xft)
 * multiple lines per slide?
+* light colored background and table of contents
+* second window for speakers laptop (progress, time, notes?)
 * markdown?

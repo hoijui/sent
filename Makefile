@@ -3,7 +3,7 @@
 
 include config.mk
 
-SRC = sent.c
+SRC = sent.c drw.c util.c
 OBJ = ${SRC:.c=.o}
 
 all: options sent

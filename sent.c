@@ -12,8 +12,10 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Xft/Xft.h>
 
 #include "arg.h"
+#include "drw.h"
 
 char *argv0;
 
@@ -119,6 +121,7 @@ static int idx = 0;
 static int slidecount = 0;
 static XWindow xw;
 static struct DC dc;
+static Drw *d = NULL;
 static int running = 1;
 static char *opt_font = NULL;
 
@@ -410,6 +413,8 @@ void cleanup(struct DC *cur)
 		return;
 	}
 
+	drw_free(d);
+
 	XDestroyWindow(xw.dpy, xw.win);
 	XSync(xw.dpy, False);
 	XCloseDisplay(xw.dpy);
@@ -580,6 +585,9 @@ void xinit()
 	xw.netwmname = XInternAtom(xw.dpy, "_NET_WM_NAME", False);
 	XSetWMProtocols(xw.dpy, xw.win, &xw.wmdeletewin, 1);
 
+	if(!(d = drw_create(xw.dpy, xw.scr, xw.win, xw.w, xw.h)))
+		eprintf("Can't create drawing context.");
+
 	xloadfonts(opt_font ? opt_font : font);
 
 	XStringListToTextProperty(&argv0, 1, &prop);
@@ -663,6 +671,7 @@ void kpress(XEvent *e)
 void configure(XEvent *e)
 {
 	resize(e->xconfigure.width, e->xconfigure.height);
+	drw_resize(d, e->xconfigure.width, e->xconfigure.height);
 	if (slides[idx].img)
 		slides[idx].img->state &= ~(DRAWN | SCALED);
 	xdraw();

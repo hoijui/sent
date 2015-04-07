@@ -122,6 +122,7 @@ static int slidecount = 0;
 static XWindow xw;
 static struct DC dc;
 static Drw *d = NULL;
+static ClrScheme sc;
 static int running = 1;
 static char *opt_font = NULL;
 
@@ -413,6 +414,8 @@ void cleanup(struct DC *cur)
 		return;
 	}
 
+	drw_clr_free(sc.border);
+	drw_clr_free(sc.fg);
 	drw_free(d);
 
 	XDestroyWindow(xw.dpy, xw.win);
@@ -533,10 +536,12 @@ void xdraw()
 
 	XClearWindow(xw.dpy, xw.win);
 
-	if (!im)
-		XDrawString(xw.dpy, xw.win, dc->gc, (xw.w - width)/2, (xw.h + height)/2,
-				slides[idx].text, line_len);
-	else if (!(im->state & LOADED) && !pngread(im))
+	if (!im) {
+//		XDrawString(xw.dpy, xw.win, dc->gc, (xw.w - width)/2, (xw.h + height)/2,
+//				slides[idx].text, line_len);
+		drw_text(d, (xw.w - width)/2, (xw.h + height)/2, 100, 20, slides[idx].text, line_len);
+		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
+	} else if (!(im->state & LOADED) && !pngread(im))
 		eprintf("could not read image %s", slides[idx].text + 1);
 	else if (!(im->state & SCALED) && !pngprepare(im))
 		eprintf("could not prepare image %s for drawing", slides[idx].text + 1);
@@ -587,6 +592,10 @@ void xinit()
 
 	if(!(d = drw_create(xw.dpy, xw.scr, xw.win, xw.w, xw.h)))
 		eprintf("Can't create drawing context.");
+	sc.border = drw_clr_create(d, "#FFFFFF");
+	sc.bg = sc.border;
+	sc.fg = drw_clr_create(d, "#000000");
+	drw_setscheme(d, &sc);
 
 	xloadfonts(opt_font ? opt_font : font);
 
@@ -615,6 +624,13 @@ void xloadfonts(char *fontstr)
 		eprintf("sent: could not find a scalable font matching %s", fontstr);
 
 	memset(&gcvalues, 0, sizeof(gcvalues));
+
+	const char *fonts[] = {
+		"Sans:size=10.5",
+		"VL Gothic:size=10.5",
+		"WenQuanYi Micro Hei:size=10.5",
+	};
+	drw_load_fonts(d, fonts, LEN(fonts));
 
 	do {
 		if (!(fnt = xloadqueryscalablefont(fstr[count], FONTSZ(i)))) {

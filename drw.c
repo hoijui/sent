@@ -220,7 +220,7 @@ int
 drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, const char *text, int invert) {
 	char buf[1024];
 	int tx, ty, th;
-	Extnts tex;
+	unsigned int ew;
 	Colormap cmap;
 	Visual *vis;
 	XftDraw *d;
@@ -282,10 +282,10 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, const char *tex
 		}
 
 		if (utf8strlen) {
-			drw_font_getexts(curfont, utf8str, utf8strlen, &tex);
+			drw_font_getexts(curfont, utf8str, utf8strlen, &ew, NULL);
 			/* shorten text if necessary */
-			for(len = MIN(utf8strlen, (sizeof buf) - 1); len && (tex.w > w - drw->fonts[0]->h || w < drw->fonts[0]->h); len--)
-				drw_font_getexts(curfont, utf8str, len, &tex);
+			for(len = MIN(utf8strlen, (sizeof buf) - 1); len && (ew > w - drw->fonts[0]->h || w < drw->fonts[0]->h); len--)
+				drw_font_getexts(curfont, utf8str, len, &ew, NULL);
 
 			if (len) {
 				memcpy(buf, utf8str, len);
@@ -300,8 +300,8 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, const char *tex
 					XftDrawStringUtf8(d, invert ? &drw->scheme->bg->rgb : &drw->scheme->fg->rgb, curfont->xfont, tx, ty, (XftChar8 *)buf, len);
 				}
 
-				x += tex.w;
-				w -= tex.w;
+				x += ew;
+				w -= ew;
 			}
 		}
 
@@ -372,24 +372,16 @@ drw_map(Drw *drw, Window win, int x, int y, unsigned int w, unsigned int h) {
 
 
 void
-drw_font_getexts(Fnt *font, const char *text, unsigned int len, Extnts *tex) {
+drw_font_getexts(Fnt *font, const char *text, unsigned int len, unsigned int *w, unsigned int *h) {
 	XGlyphInfo ext;
 
 	if(!font || !text)
 		return;
 	XftTextExtentsUtf8(font->dpy, font->xfont, (XftChar8 *)text, len, &ext);
-	tex->h = font->h;
-	tex->w = ext.xOff;
-}
-
-unsigned int
-drw_font_getexts_width(Fnt *font, const char *text, unsigned int len) {
-	Extnts tex;
-
-	if(!font)
-		return -1;
-	drw_font_getexts(font, text, len, &tex);
-	return tex.w;
+	if (w)
+		*w = ext.xOff;
+	if (h)
+		*h = font->h;
 }
 
 Cur *

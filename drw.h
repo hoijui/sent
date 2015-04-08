@@ -37,11 +37,6 @@ typedef struct {
 	Fnt *fonts[DRW_FONT_CACHE_SIZE];
 } Drw;
 
-typedef struct {
-	unsigned int w;
-	unsigned int h;
-} Extnts;
-
 /* Drawable abstraction */
 Drw *drw_create(Display *dpy, int screen, Window win, unsigned int w, unsigned int h);
 void drw_resize(Drw *drw, unsigned int w, unsigned int h);
@@ -51,8 +46,7 @@ void drw_free(Drw *drw);
 Fnt *drw_font_create(Drw *drw, const char *fontname);
 void drw_load_fonts(Drw* drw, const char *fonts[], size_t fontcount);
 void drw_font_free(Fnt *font);
-void drw_font_getexts(Fnt *font, const char *text, unsigned int len, Extnts *extnts);
-unsigned int drw_font_getexts_width(Fnt *font, const char *text, unsigned int len);
+void drw_font_getexts(Fnt *font, const char *text, unsigned int len, unsigned int *w, unsigned int *h);
 
 /* Colour abstraction */
 Clr *drw_clr_create(Drw *drw, const char *clrname);

@@ -22,6 +22,7 @@ char *argv0;
 /* macros */
 #define LEN(a)     (sizeof(a) / sizeof(a)[0])
 #define LIMIT(x, a, b)    (x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x)
+#define MAXFONTSTRLEN 128
 
 typedef enum {
 	NONE = 0,
@@ -95,6 +96,7 @@ static XFontStruct *xloadqueryscalablefont(char *name, int size);
 static struct DC *getfontsize(char *str, size_t len, int *width, int *height);
 static void cleanup(struct DC *cur);
 static void eprintf(const char *, ...);
+static void die(const char *, ...);
 static void load(FILE *fp);
 static void advance(const Arg *arg);
 static void quit(const Arg *arg);
@@ -124,7 +126,6 @@ static struct DC dc;
 static Drw *d = NULL;
 static ClrScheme sc;
 static int running = 1;
-static char *opt_font = NULL;
 
 static void (*handler[LASTEvent])(XEvent *) = {
 	[ButtonPress] = bpress,
@@ -311,7 +312,7 @@ void pngdraw(struct image *img)
 {
 	int xoffset = (xw.w - img->ximg->width) / 2;
 	int yoffset = (xw.h - img->ximg->height) / 2;
-	XPutImage(xw.dpy, xw.win, dc.gc, img->ximg, 0, 0,
+	XPutImage(xw.dpy, xw.win, d->gc, img->ximg, 0, 0,
 			xoffset, yoffset, img->ximg->width, img->ximg->height);
 	XFlush(xw.dpy);
 	img->state |= DRAWN;
@@ -401,8 +402,8 @@ struct DC *getfontsize(char *str, size_t len, int *width, int *height)
 
 void cleanup(struct DC *cur)
 {
-	XFreeFont(xw.dpy, cur->font);
-	XFreeGC(xw.dpy, cur->gc);
+//	XFreeFont(xw.dpy, cur->font);
+//	XFreeGC(xw.dpy, cur->gc);
 
 	if (cur->next) {
 		cleanup(cur->next);
@@ -427,6 +428,23 @@ void cleanup(struct DC *cur)
 	}
 }
 
+void die(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	if (fmt[0] != '\0' && fmt[strlen(fmt)-1] == ':') {
+		fputc(' ', stderr);
+		perror(NULL);
+	} else {
+		fputc('\n', stderr);
+	}
+	exit(1);
+}
+
 void eprintf(const char *fmt, ...)
 {
 	va_list ap;
@@ -441,7 +459,6 @@ void eprintf(const char *fmt, ...)
 	} else {
 		fputc('\n', stderr);
 	}
-	exit(EXIT_FAILURE);
 }
 
 void load(FILE *fp)
@@ -529,9 +546,9 @@ void usage()
 void xdraw()
 {
 	int line_len = strlen(slides[idx].text);
-	int height;
-	int width;
-	struct DC *dc = getfontsize(slides[idx].text, line_len, &width, &height);
+//	int height;
+//	int width;
+//	struct DC *dc = getfontsize(slides[idx].text, line_len, &width, &height);
 	struct image *im = slides[idx].img;
 
 	XClearWindow(xw.dpy, xw.win);
@@ -539,7 +556,7 @@ void xdraw()
 	if (!im) {
 //		XDrawString(xw.dpy, xw.win, dc->gc, (xw.w - width)/2, (xw.h + height)/2,
 //				slides[idx].text, line_len);
-		drw_text(d, (xw.w - width)/2, (xw.h + height)/2, 100, 20, slides[idx].text, line_len);
+		drw_text(d, xw.w/2, xw.h/2, 1000, 200, slides[idx].text, 0);
 		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
 	} else if (!(im->state & LOADED) && !pngread(im))
 		eprintf("could not read image %s", slides[idx].text + 1);
@@ -597,7 +614,7 @@ void xinit()
 	sc.fg = drw_clr_create(d, "#000000");
 	drw_setscheme(d, &sc);
 
-	xloadfonts(opt_font ? opt_font : font);
+	xloadfonts(font);
 
 	XStringListToTextProperty(&argv0, 1, &prop);
 	XSetWMName(xw.dpy, xw.win, &prop);
@@ -615,41 +632,61 @@ void xloadfonts(char *fontstr)
 	XFontStruct *fnt;
 	XGCValues gcvalues;
 	struct DC *cur = &dc;
-	char **fstr = XListFonts(xw.dpy, fontstr, 42, &count);
+//	char **fstr = XListFonts(xw.dpy, fontstr, 42, &count);
+	char *fstrs;
+	const char **fonts;
 
-	while (count-- && !xfontisscalable(fstr[count]))
-		; /* nothing, just get first scalable font result */
+	if (!(fstrs = malloc(NUMFONTS * MAXFONTSTRLEN)))
+		die("could not malloc fontstrings");
+	if (!(fonts = malloc(NUMFONTS * sizeof(char*)))) {
+		free(fstrs);
+		die("could not malloc fontarray");
+	}
 
-	if (count < 0)
-		eprintf("sent: could not find a scalable font matching %s", fontstr);
-
-	memset(&gcvalues, 0, sizeof(gcvalues));
-
-	const char *fonts[] = {
-		"Sans:size=10.5",
+/*	const char *fonts[] = {
+		"Sans:size=80:size=10.5",
 		"VL Gothic:size=10.5",
 		"WenQuanYi Micro Hei:size=10.5",
-	};
-	drw_load_fonts(d, fonts, LEN(fonts));
+	}; */
+//	drw_load_fonts(d, fonts, LEN(fonts));
 
-	do {
-		if (!(fnt = xloadqueryscalablefont(fstr[count], FONTSZ(i)))) {
-			i++;
-			continue;
-		}
+	for (i = 0; i < NUMFONTS; i++) {
+		snprintf(&fstrs[i*MAXFONTSTRLEN], MAXFONTSTRLEN, "%s:size=%d", fontstr, FONTSZ(i));
+		puts(&fstrs[i*MAXFONTSTRLEN]);
+		fonts[i] = &fstrs[i*MAXFONTSTRLEN];
+	}
 
-		cur->gc = XCreateGC(xw.dpy, XRootWindow(xw.dpy, xw.scr), 0, &gcvalues);
-		cur->font = fnt;
-		XSetFont(xw.dpy, cur->gc, fnt->fid);
-		XSetForeground(xw.dpy, cur->gc, BlackPixel(xw.dpy, xw.scr));
-		cur->next = (++i < NUMFONTS) ? malloc(sizeof(struct DC)) : NULL;
-		cur = cur->next;
-	} while (cur && i < NUMFONTS);
+	drw_load_fonts(d, fonts, NUMFONTS);
 
-	if (cur == &dc)
-		eprintf("sent: could not load fonts.");
+	free(fstrs);
+	free(fonts);
 
-	XFreeFontNames(fstr);
+//	while (count-- && !xfontisscalable(fstr[count]))
+//		; /* nothing, just get first scalable font result */
+//
+//	if (count < 0)
+//		eprintf("sent: could not find a scalable font matching %s", fontstr);
+//
+//	memset(&gcvalues, 0, sizeof(gcvalues));
+//
+//	do {
+//		if (!(fnt = xloadqueryscalablefont(fstr[count], FONTSZ(i)))) {
+//			i++;
+//			continue;
+//		}
+//
+//		cur->gc = XCreateGC(xw.dpy, XRootWindow(xw.dpy, xw.scr), 0, &gcvalues);
+//		cur->font = fnt;
+//		XSetFont(xw.dpy, cur->gc, fnt->fid);
+//		XSetForeground(xw.dpy, cur->gc, BlackPixel(xw.dpy, xw.scr));
+//		cur->next = (++i < NUMFONTS) ? malloc(sizeof(struct DC)) : NULL;
+//		cur = cur->next;
+//	} while (cur && i < NUMFONTS);
+//
+//	if (cur == &dc)
+//		eprintf("sent: could not load fonts.");
+//
+//	XFreeFontNames(fstr);
 }
 
 void bpress(XEvent *e)
@@ -700,7 +737,7 @@ int main(int argc, char *argv[])
 
 	ARGBEGIN {
 	case 'f':
-		opt_font = EARGF(usage());
+		font = EARGF(usage());
 		break;
 	case 'v':
 	default:
@@ -712,7 +749,7 @@ int main(int argc, char *argv[])
 			load(fp);
 			fclose(fp);
 		} else {
-			eprintf("could not open file %s for reading:", argv[i]);
+			eprintf("could not open %s for reading:", argv[i]);
 		}
 	}
 

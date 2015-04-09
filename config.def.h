@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 
 /* The three fields set to 0 have to stay that way for a scalable font */
-static char font[] = "-*-dejavu sans condensed-bold-r-*-*-0-0-*-*-*-0-*-*";
+static char *font = "-*-dejavu sans condensed-bold-r-*-*-0-0-*-*-*-0-*-*";
 #define NUMFONTS 30
 #define FONTSZ(x) ((int)(100.0 * powf(1.1288, (x)))) /* x in [0, NUMFONTS-1] */
 

@@ -124,7 +124,7 @@ static int slidecount = 0;
 static XWindow xw;
 static struct DC dc;
 static Drw *d = NULL;
-static ClrScheme sc;
+static Scm *sc;
 static int running = 1;
 
 static void (*handler[LASTEvent])(XEvent *) = {
@@ -415,8 +415,7 @@ void cleanup(struct DC *cur)
 		return;
 	}
 
-	drw_clr_free(sc.border);
-	drw_clr_free(sc.fg);
+	drw_scm_free(sc);
 	drw_free(d);
 
 	XDestroyWindow(xw.dpy, xw.win);
@@ -609,10 +608,8 @@ void xinit()
 
 	if(!(d = drw_create(xw.dpy, xw.scr, xw.win, xw.w, xw.h)))
 		eprintf("Can't create drawing context.");
-	sc.border = drw_clr_create(d, "#FFFFFF");
-	sc.bg = sc.border;
-	sc.fg = drw_clr_create(d, "#000000");
-	drw_setscheme(d, &sc);
+	sc = drw_scm_create(d, "#000000", "#FFFFFF");
+	drw_setscheme(d, sc);
 
 	xloadfonts(font);
 

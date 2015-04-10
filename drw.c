@@ -171,35 +171,36 @@ drw_font_free(Fnt *font) {
 	free(font);
 }
 
-Clr *
-drw_clr_create(Drw *drw, const char *clrname) {
-	Clr *clr;
+Scm *
+drw_scm_create(Drw *drw, const char *fgname, const char *bgname) {
+	Scm *scm;
 	Colormap cmap;
 	Visual *vis;
 
-	if(!drw)
+	if (!drw || !(scm = (Scm *)calloc(1, sizeof(Scm))))
 		return NULL;
-	clr = (Clr *)calloc(1, sizeof(Clr));
-	if(!clr)
-		return NULL;
+
 	cmap = DefaultColormap(drw->dpy, drw->screen);
 	vis = DefaultVisual(drw->dpy, drw->screen);
-	if(!XftColorAllocName(drw->dpy, vis, cmap, clrname, &clr->rgb))
-		die("error, cannot allocate color '%s'\n", clrname);
-	clr->pix = clr->rgb.pixel;
-	return clr;
+	if (!XftColorAllocName(drw->dpy, vis, cmap, fgname, &scm->fg.rgb))
+		die("error, cannot allocate color '%s'\n", fgname);
+	if (!XftColorAllocName(drw->dpy, vis, cmap, bgname, &scm->bg.rgb))
+		die("error, cannot allocate color '%s'\n", bgname);
+	scm->fg.pix = scm->fg.rgb.pixel;
+	scm->bg.pix = scm->bg.rgb.pixel;
+	return scm;
 }
 
 void
-drw_clr_free(Clr *clr) {
-	if(clr)
-		free(clr);
+drw_scm_free(Scm *scm) {
+	if (scm)
+		free(scm);
 }
 
 void
-drw_setscheme(Drw *drw, ClrScheme *scheme) {
-	if(drw && scheme)
-		drw->scheme = scheme;
+drw_setscheme(Drw *drw, Scm *scm) {
+	if (drw && scm)
+		drw->scheme = scm;
 }
 
 void
@@ -208,7 +209,7 @@ drw_rect(Drw *drw, int x, int y, unsigned int w, unsigned int h, int filled, int
 
 	if(!drw || !drw->fontcount || !drw->scheme)
 		return;
-	XSetForeground(drw->dpy, drw->gc, invert ? drw->scheme->bg->pix : drw->scheme->fg->pix);
+	XSetForeground(drw->dpy, drw->gc, invert ? drw->scheme->bg.pix : drw->scheme->fg.pix);
 	dx = (drw->fonts[0]->ascent + drw->fonts[0]->descent + 2) / 4;
 	if(filled)
 		XFillRectangle(drw->dpy, drw->drawable, drw->gc, x+1, y+1, dx+1, dx+1);
@@ -242,7 +243,7 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, const char *tex
 	if (!drw || !drw->scheme) {
 		return 0;
 	} else if (render) {
-		XSetForeground(drw->dpy, drw->gc, invert ? drw->scheme->fg->pix : drw->scheme->bg->pix);
+		XSetForeground(drw->dpy, drw->gc, invert ? drw->scheme->fg.pix : drw->scheme->bg.pix);
 		XFillRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w, h);
 	}
 
@@ -297,7 +298,7 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, const char *tex
 					th = curfont->ascent + curfont->descent;
 					ty = y + (h / 2) - (th / 2) + curfont->ascent;
 					tx = x + (h / 2);
-					XftDrawStringUtf8(d, invert ? &drw->scheme->bg->rgb : &drw->scheme->fg->rgb, curfont->xfont, tx, ty, (XftChar8 *)buf, len);
+					XftDrawStringUtf8(d, invert ? &drw->scheme->bg.rgb : &drw->scheme->fg.rgb, curfont->xfont, tx, ty, (XftChar8 *)buf, len);
 				}
 
 				x += ew;

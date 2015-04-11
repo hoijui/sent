@@ -470,13 +470,13 @@ void load(FILE *fp)
 	while (fgets(buf, sizeof(buf), fp)) {
 		if ((i+1) * sizeof(*slides) >= size)
 			if (!(slides = realloc(slides, (size += BUFSIZ))))
-				eprintf("cannot realloc %u bytes:", size);
+				die("cannot realloc %u bytes:", size);
 		if (*buf == '#')
 			continue;
 		if ((p = strchr(buf, '\n')))
 			*p = '\0';
 		if (!(slides[i].text = strdup(buf)))
-			eprintf("cannot strdup %u bytes:", strlen(buf)+1);
+			die("cannot strdup %u bytes:", strlen(buf)+1);
 		if (slides[i].text[0] == '@')
 			slides[i].img = pngopen(slides[i].text + 1);
 		i++;
@@ -496,9 +496,9 @@ void advance(const Arg *arg)
 		idx = new_idx;
 		xdraw();
 		if (slidecount > idx + 1 && slides[idx + 1].img && !pngread(slides[idx + 1].img))
-			eprintf("could not read image %s", slides[idx + 1].text + 1);
+			die("could not read image %s", slides[idx + 1].text + 1);
 		if (0 < idx && slides[idx - 1].img && !pngread(slides[idx - 1].img))
-			eprintf("could not read image %s", slides[idx - 1].text + 1);
+			die("could not read image %s", slides[idx - 1].text + 1);
 	}
 }
 
@@ -538,7 +538,7 @@ void run()
 
 void usage()
 {
-	eprintf("sent " VERSION " (c) 2014 markus.teich@stusta.mhn.de\n" \
+	die("sent " VERSION " (c) 2014 markus.teich@stusta.mhn.de\n" \
 	"usage: sent [-f font] FILE1 [FILE2 ...]", argv0);
 }
 
@@ -572,7 +572,7 @@ void xhints()
 	XSizeHints *sizeh = NULL;
 
 	if (!(sizeh = XAllocSizeHints()))
-		eprintf("sent: Could not alloc size hints");
+		die("sent: Could not alloc size hints");
 
 	sizeh->flags = PSize;
 	sizeh->height = xw.h;
@@ -587,7 +587,7 @@ void xinit()
 	XTextProperty prop;
 
 	if (!(xw.dpy = XOpenDisplay(NULL)))
-		eprintf("Can't open display.");
+		die("Can't open display.");
 	xw.scr = XDefaultScreen(xw.dpy);
 	xw.vis = XDefaultVisual(xw.dpy, xw.scr);
 	xw.w = DisplayWidth(xw.dpy, xw.scr);
@@ -607,7 +607,7 @@ void xinit()
 	XSetWMProtocols(xw.dpy, xw.win, &xw.wmdeletewin, 1);
 
 	if(!(d = drw_create(xw.dpy, xw.scr, xw.win, xw.w, xw.h)))
-		eprintf("Can't create drawing context.");
+		die("Can't create drawing context.");
 	sc = drw_scm_create(d, "#000000", "#FFFFFF");
 	drw_setscheme(d, sc);
 

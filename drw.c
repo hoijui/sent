@@ -204,17 +204,15 @@ drw_setscheme(Drw *drw, Scm *scm) {
 }
 
 void
-drw_rect(Drw *drw, int x, int y, unsigned int w, unsigned int h, int filled, int empty, int invert) {
-	int dx;
-
-	if(!drw || !drw->fontcount || !drw->scheme)
+drw_rect(Drw *drw, int x, int y, unsigned int w, unsigned int h, int filled, int invert)
+{
+	if (!drw || !drw->scheme)
 		return;
 	XSetForeground(drw->dpy, drw->gc, invert ? drw->scheme->bg.pix : drw->scheme->fg.pix);
-	dx = (drw->fonts[0]->ascent + drw->fonts[0]->descent + 2) / 4;
-	if(filled)
-		XFillRectangle(drw->dpy, drw->drawable, drw->gc, x+1, y+1, dx+1, dx+1);
-	else if(empty)
-		XDrawRectangle(drw->dpy, drw->drawable, drw->gc, x+1, y+1, dx, dx);
+	if (filled)
+		XFillRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w, h);
+	else
+		XDrawRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w, h);
 }
 
 int

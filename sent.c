@@ -125,6 +125,7 @@ static XWindow xw;
 static struct DC dc;
 static Drw *d = NULL;
 static Scm *sc;
+static Fnt *fonts[NUMFONTS];
 static int running = 1;
 
 static void (*handler[LASTEvent])(XEvent *) = {
@@ -606,7 +607,7 @@ void xinit()
 	xw.netwmname = XInternAtom(xw.dpy, "_NET_WM_NAME", False);
 	XSetWMProtocols(xw.dpy, xw.win, &xw.wmdeletewin, 1);
 
-	if(!(d = drw_create(xw.dpy, xw.scr, xw.win, xw.w, xw.h)))
+	if (!(d = drw_create(xw.dpy, xw.scr, xw.win, xw.w, xw.h)))
 		die("Can't create drawing context.");
 	sc = drw_scm_create(d, "#000000", "#FFFFFF");
 	drw_setscheme(d, sc);

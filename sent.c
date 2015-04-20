@@ -93,7 +93,7 @@ static void pngdraw(struct image *img);
 
 static Bool xfontisscalable(char *name);
 static XFontStruct *xloadqueryscalablefont(char *name, int size);
-static struct DC *getfontsize(char *str, size_t len, int *width, int *height);
+static void getfontsize(char *str, int *width, int *height);
 static void cleanup(struct DC *cur);
 static void eprintf(const char *, ...);
 static void die(const char *, ...);
@@ -125,7 +125,7 @@ static XWindow xw;
 static struct DC dc;
 static Drw *d = NULL;
 static Scm *sc;
-static Fnt *fonts[NUMFONTS];
+static Fnt *fonts[NUMFONTSCALES];
 static int running = 1;
 
 static void (*handler[LASTEvent])(XEvent *) = {
@@ -381,24 +381,17 @@ XFontStruct *xloadqueryscalablefont(char *name, int size)
 	return (field != 14) ? NULL : XLoadQueryFont(xw.dpy, newname);
 }
 
-struct DC *getfontsize(char *str, size_t len, int *width, int *height)
+void getfontsize(char *str, int *width, int *height)
 {
-	XCharStruct info;
-	int unused;
-	struct DC *pre = &dc;
-	struct DC *cur = &dc;
+	size_t i;
 
-	do {
-		XTextExtents(cur->font, str, len, &unused, &unused, &unused, &info);
-		if (info.width > xw.uw || info.ascent + info.descent > xw.uh)
+	for (i = 0; i < NUMFONTSCALES; i++) {
+		drw_setfontset(d, fonts[i]);
+		if ((*width = drw_fontset_getwidth(d, str)) > xw.uw || (*height = d->fonts->h) > xw.uh)
 			break;
-		pre = cur;
-	} while ((cur = cur->next));
-
-	XTextExtents(pre->font, "o", 1, &unused, &unused, &unused, &info);
-	*height = info.ascent;
-	*width = XTextWidth(pre->font, str, len);
-	return pre;
+	}
+	if (i > 0)
+		drw_setfontset(d, fonts[i-1]);
 }
 
 void cleanup(struct DC *cur)
@@ -545,18 +538,15 @@ void usage()
 
 void xdraw()
 {
-	int line_len = strlen(slides[idx].text);
-//	int height;
-//	int width;
-//	struct DC *dc = getfontsize(slides[idx].text, line_len, &width, &height);
+	int height;
+	int width;
 	struct image *im = slides[idx].img;
 
+	getfontsize(slides[idx].text, &width, &height);
 	XClearWindow(xw.dpy, xw.win);
 
 	if (!im) {
-//		XDrawString(xw.dpy, xw.win, dc->gc, (xw.w - width)/2, (xw.h + height)/2,
-//				slides[idx].text, line_len);
-		drw_text(d, xw.w/2, xw.h/2, 1000, 200, slides[idx].text, 0);
+		drw_text(d, (xw.w - width) / 2, (xw.h - height) / 2, width, height, slides[idx].text, 0);
 		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
 	} else if (!(im->state & LOADED) && !pngread(im))
 		eprintf("could not read image %s", slides[idx].text + 1);
@@ -626,29 +616,41 @@ void xinit()
 void xloadfonts(char *fontstr)
 {
 	int count = 0;
-	int i = 0;
+	int i, j;
 	XFontStruct *fnt;
 	XGCValues gcvalues;
 	struct DC *cur = &dc;
-//	char **fstr = XListFonts(xw.dpy, fontstr, 42, &count);
-	char *fstrs;
-	const char **fonts;
+	char *fstrs[LEN(fontfallbacks)];
 
-	if (!(fstrs = malloc(NUMFONTS * MAXFONTSTRLEN)))
+	for (j = 0; j < LEN(fontfallbacks); j++) {
+		if (!(fstrs[j] = malloc(MAXFONTSTRLEN)))
+			die("could not malloc fstrs");
+	}
+
+	for (i = 0; i < NUMFONTSCALES; i++) {
+		for (j = 0; j < LEN(fontfallbacks); j++) {
+			if (MAXFONTSTRLEN < snprintf(fstrs[j], MAXFONTSTRLEN, "%s:size=%d", fontfallbacks[j], FONTSZ(i)))
+				die("font string too long");
+		}
+		fonts[i] = drw_fontset_create(d, (const char**)fstrs, LEN(fstrs));
+	}
+	drw_setfontset(d, fonts[19]);
+
+/*	if (!(fstrs = malloc(NUMFONTS * MAXFONTSTRLEN)))
 		die("could not malloc fontstrings");
 	if (!(fonts = malloc(NUMFONTS * sizeof(char*)))) {
 		free(fstrs);
 		die("could not malloc fontarray");
 	}
 
-/*	const char *fonts[] = {
+	const char *fonts[] = {
 		"Sans:size=80:size=10.5",
 		"VL Gothic:size=10.5",
 		"WenQuanYi Micro Hei:size=10.5",
 	}; */
 //	drw_load_fonts(d, fonts, LEN(fonts));
 
-	for (i = 0; i < NUMFONTS; i++) {
+/*	for (i = 0; i < NUMFONTS; i++) {
 		snprintf(&fstrs[i*MAXFONTSTRLEN], MAXFONTSTRLEN, "%s:size=%d", fontstr, FONTSZ(i));
 		puts(&fstrs[i*MAXFONTSTRLEN]);
 		fonts[i] = &fstrs[i*MAXFONTSTRLEN];
@@ -658,7 +660,7 @@ void xloadfonts(char *fontstr)
 
 	free(fstrs);
 	free(fonts);
-
+*/
 //	while (count-- && !xfontisscalable(fstr[count]))
 //		; /* nothing, just get first scalable font result */
 //

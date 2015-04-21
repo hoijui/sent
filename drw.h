@@ -5,14 +5,16 @@ typedef struct {
 	Cursor cursor;
 } Cur;
 
-typedef struct {
+typedef struct Fnt Fnt;
+struct Fnt {
 	Display *dpy;
 	int ascent;
 	int descent;
 	unsigned int h;
 	XftFont *xfont;
 	FcPattern *pattern;
-} Fnt;
+	Fnt *next;
+};
 
 typedef struct {
 	struct {
@@ -29,8 +31,7 @@ typedef struct {
 	Drawable drawable;
 	GC gc;
 	Scm *scheme;
-	size_t fontcount;
-	Fnt *fonts[DRW_FONT_CACHE_SIZE];
+	Fnt *fonts;
 } Drw;
 
 /* Drawable abstraction */
@@ -39,9 +40,9 @@ void drw_resize(Drw *drw, unsigned int w, unsigned int h);
 void drw_free(Drw *drw);
 
 /* Fnt abstraction */
-Fnt *drw_font_create(Drw *drw, const char *fontname);
-void drw_load_fonts(Drw* drw, const char *fonts[], size_t fontcount);
-void drw_font_free(Fnt *font);
+Fnt *drw_fontset_create(Drw* drw, const char *fonts[], size_t fontcount);
+void drw_fontset_free(Fnt* set);
+unsigned int drw_fontset_getwidth(Drw *drw, const char *text);
 void drw_font_getexts(Fnt *font, const char *text, unsigned int len, unsigned int *w, unsigned int *h);
 
 /* Colorscheme abstraction */
@@ -53,7 +54,7 @@ Cur *drw_cur_create(Drw *drw, int shape);
 void drw_cur_free(Drw *drw, Cur *cursor);
 
 /* Drawing context manipulation */
-void drw_setfont(Drw *drw, Fnt *font);
+void drw_setfontset(Drw *drw, Fnt *set);
 void drw_setscheme(Drw *drw, Scm *scm);
 
 /* Drawing functions */

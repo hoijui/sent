@@ -551,6 +551,7 @@ void xdraw()
 	XClearWindow(xw.dpy, xw.win);
 
 	if (!im) {
+		drw_rect(d, 0, 0, xw.w, xw.h, 1, 1);
 		drw_text(d, (xw.w - width) / 2, (xw.h - height) / 2, width, height, slides[idx].text, 0);
 		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
 	} else if (!(im->state & LOADED) && !pngread(im))

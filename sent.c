@@ -384,14 +384,19 @@ XFontStruct *xloadqueryscalablefont(char *name, int size)
 void getfontsize(char *str, int *width, int *height)
 {
 	size_t i;
+	size_t len = strlen(str);
 
 	for (i = 0; i < NUMFONTSCALES; i++) {
 		drw_setfontset(d, fonts[i]);
-		if ((*width = drw_fontset_getwidth(d, str)) > xw.uw || (*height = d->fonts->h) > xw.uh)
+		drw_font_getexts(fonts[i], str, len, width, height);
+		if (*width  > xw.uw || *height > xw.uh)
 			break;
 	}
-	if (i > 0)
+	if (i > 0) {
 		drw_setfontset(d, fonts[i-1]);
+		drw_font_getexts(fonts[i-1], str, len, width, height);
+	}
+	*width += d->fonts->h;
 }
 
 void cleanup(struct DC *cur)

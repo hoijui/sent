@@ -91,9 +91,7 @@ static int pngprepare(struct image *img);
 static void pngscale(struct image *img);
 static void pngdraw(struct image *img);
 
-static Bool xfontisscalable(char *name);
-static XFontStruct *xloadqueryscalablefont(char *name, int size);
-static void getfontsize(char *str, int *width, int *height);
+static void getfontsize(char *str, unsigned int *width, unsigned int *height);
 static void cleanup(struct DC *cur);
 static void eprintf(const char *, ...);
 static void die(const char *, ...);
@@ -319,69 +317,7 @@ void pngdraw(struct image *img)
 	img->state |= DRAWN;
 }
 
-Bool xfontisscalable(char *name)
-{
-	int i, field;
-
-	if (!name || name[0] != '-')
-		return False;
-
-	for (i = field = 0; name[i] != '\0'; i++) {
-		if (name[i] == '-') {
-			field++;
-			if ((field == 7) || (field == 8) || (field == 12))
-				if ((name[i+1] != '0') || (name[i+2] != '-'))
-					return False;
-		}
-	}
-	return field == 14;
-}
-
-XFontStruct *xloadqueryscalablefont(char *name, int size)
-{
-	int i, j, field;
-	char newname[500];
-	int resx, resy;
-
-	if (!name || name[0] != '-')
-		return NULL;
-	/* calculate our screen resolution in dots per inch. 25.4mm = 1 inch */
-	resx = DisplayWidth(xw.dpy, xw.scr)/(DisplayWidthMM(xw.dpy, xw.scr)/25.4);
-	resy = DisplayHeight(xw.dpy, xw.scr)/(DisplayHeightMM(xw.dpy, xw.scr)/25.4);
-	/* copy the font name, changing the scalable fields as we do so */
-	for (i = j = field = 0; name[i] != '\0' && field <= 14; i++) {
-		newname[j++] = name[i];
-		if (name[i] == '-') {
-			field++;
-			switch (field) {
-				case 7:  /* pixel size */
-				case 12: /* average width */
-					/* change from "-0-" to "-*-" */
-					newname[j] = '*';
-					j++;
-					if (name[i+1] != '\0') i++;
-					break;
-				case 8:  /* point size */
-					/* change from "-0-" to "-<size>-" */
-					sprintf(&newname[j], "%d", size);
-					while (newname[j] != '\0') j++;
-					if (name[i+1] != '\0') i++;
-					break;
-				case 9:  /* x-resolution */
-				case 10: /* y-resolution */
-					/* change from an unspecified resolution to resx or resy */
-					sprintf(&newname[j], "%d", (field == 9) ? resx : resy);
-					while (newname[j] != '\0') j++;
-					while ((name[i+1] != '-') && (name[i+1] != '\0')) i++;
-					break;
-			}
-		}
-	}
-	newname[j] = '\0';
-	return (field != 14) ? NULL : XLoadQueryFont(xw.dpy, newname);
-}
-
-void getfontsize(char *str, int *width, int *height)
+void getfontsize(char *str, unsigned int *width, unsigned int *height)
 {
 	size_t i;
 	size_t len = strlen(str);
@@ -543,8 +479,7 @@ void usage()
 
 void xdraw()
 {
-	int height;
-	int width;
+	unsigned int height, width;
 	struct image *im = slides[idx].img;
 
 	getfontsize(slides[idx].text, &width, &height);
@@ -621,11 +556,7 @@ void xinit()
 
 void xloadfonts(char *fontstr)
 {
-	int count = 0;
 	int i, j;
-	XFontStruct *fnt;
-	XGCValues gcvalues;
-	struct DC *cur = &dc;
 	char *fstrs[LEN(fontfallbacks)];
 
 	for (j = 0; j < LEN(fontfallbacks); j++) {
@@ -641,58 +572,6 @@ void xloadfonts(char *fontstr)
 		fonts[i] = drw_fontset_create(d, (const char**)fstrs, LEN(fstrs));
 	}
 	drw_setfontset(d, fonts[19]);
-
-/*	if (!(fstrs = malloc(NUMFONTS * MAXFONTSTRLEN)))
-		die("could not malloc fontstrings");
-	if (!(fonts = malloc(NUMFONTS * sizeof(char*)))) {
-		free(fstrs);
-		die("could not malloc fontarray");
-	}
-
-	const char *fonts[] = {
-		"Sans:size=80:size=10.5",
-		"VL Gothic:size=10.5",
-		"WenQuanYi Micro Hei:size=10.5",
-	}; */
-//	drw_load_fonts(d, fonts, LEN(fonts));
-
-/*	for (i = 0; i < NUMFONTS; i++) {
-		snprintf(&fstrs[i*MAXFONTSTRLEN], MAXFONTSTRLEN, "%s:size=%d", fontstr, FONTSZ(i));
-		puts(&fstrs[i*MAXFONTSTRLEN]);
-		fonts[i] = &fstrs[i*MAXFONTSTRLEN];
-	}
-
-	drw_load_fonts(d, fonts, NUMFONTS);
-
-	free(fstrs);
-	free(fonts);
-*/
-//	while (count-- && !xfontisscalable(fstr[count]))
-//		; /* nothing, just get first scalable font result */
-//
-//	if (count < 0)
-//		eprintf("sent: could not find a scalable font matching %s", fontstr);
-//
-//	memset(&gcvalues, 0, sizeof(gcvalues));
-//
-//	do {
-//		if (!(fnt = xloadqueryscalablefont(fstr[count], FONTSZ(i)))) {
-//			i++;
-//			continue;
-//		}
-//
-//		cur->gc = XCreateGC(xw.dpy, XRootWindow(xw.dpy, xw.scr), 0, &gcvalues);
-//		cur->font = fnt;
-//		XSetFont(xw.dpy, cur->gc, fnt->fid);
-//		XSetForeground(xw.dpy, cur->gc, BlackPixel(xw.dpy, xw.scr));
-//		cur->next = (++i < NUMFONTS) ? malloc(sizeof(struct DC)) : NULL;
-//		cur = cur->next;
-//	} while (cur && i < NUMFONTS);
-//
-//	if (cur == &dc)
-//		eprintf("sent: could not load fonts.");
-//
-//	XFreeFontNames(fstr);
 }
 
 void bpress(XEvent *e)

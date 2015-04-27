@@ -59,13 +59,6 @@ typedef struct {
 	int uw, uh; /* usable dimensions for drawing text and images */
 } XWindow;
 
-/* Drawing Context linked list*/
-struct DC{
-	XFontStruct *font;
-	GC gc;
-	struct DC *next;
-};
-
 typedef union {
 	int i;
 	unsigned int ui;
@@ -92,7 +85,7 @@ static void pngscale(struct image *img);
 static void pngdraw(struct image *img);
 
 static void getfontsize(char *str, unsigned int *width, unsigned int *height);
-static void cleanup(struct DC *cur);
+static void cleanup();
 static void eprintf(const char *, ...);
 static void die(const char *, ...);
 static void load(FILE *fp);
@@ -120,7 +113,6 @@ static Slide *slides = NULL;
 static int idx = 0;
 static int slidecount = 0;
 static XWindow xw;
-static struct DC dc;
 static Drw *d = NULL;
 static Scm *sc;
 static Fnt *fonts[NUMFONTSCALES];
@@ -335,21 +327,8 @@ void getfontsize(char *str, unsigned int *width, unsigned int *height)
 	*width += d->fonts->h;
 }
 
-void cleanup(struct DC *cur)
+void cleanup()
 {
-//	XFreeFont(xw.dpy, cur->font);
-//	XFreeGC(xw.dpy, cur->gc);
-
-	if (cur->next) {
-		cleanup(cur->next);
-		cur->next = NULL;
-	}
-
-	if (cur != &dc) {
-		free(cur);
-		return;
-	}
-
 	drw_scm_free(sc);
 	drw_free(d);
 
@@ -644,6 +623,6 @@ int main(int argc, char *argv[])
 	xinit();
 	run();
 
-	cleanup(&dc);
+	cleanup();
 	return EXIT_SUCCESS;
 }

@@ -329,6 +329,10 @@ void getfontsize(char *str, unsigned int *width, unsigned int *height)
 
 void cleanup()
 {
+	size_t i;
+
+	for (i = 0; i < NUMFONTSCALES; i++)
+		drw_fontset_free(fonts[i]);
 	drw_scm_free(sc);
 	drw_free(d);
 

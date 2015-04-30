@@ -20,9 +20,9 @@
 char *argv0;
 
 /* macros */
-#define LEN(a)     (sizeof(a) / sizeof(a)[0])
-#define LIMIT(x, a, b)    (x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x)
-#define MAXFONTSTRLEN 128
+#define LEN(a)         (sizeof(a) / sizeof(a)[0])
+#define LIMIT(x, a, b) (x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x)
+#define MAXFONTSTRLEN  128
 
 typedef enum {
 	NONE = 0,
@@ -472,12 +472,13 @@ void xdraw()
 		drw_rect(d, 0, 0, xw.w, xw.h, 1, 1);
 		drw_text(d, (xw.w - width) / 2, (xw.h - height) / 2, width, height, slides[idx].text, 0);
 		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
-	} else if (!(im->state & LOADED) && !pngread(im))
+	} else if (!(im->state & LOADED) && !pngread(im)) {
 		eprintf("could not read image %s", slides[idx].text + 1);
-	else if (!(im->state & SCALED) && !pngprepare(im))
+	} else if (!(im->state & SCALED) && !pngprepare(im)) {
 		eprintf("could not prepare image %s for drawing", slides[idx].text + 1);
-	else if (!(im->state & DRAWN))
+	} else if (!(im->state & DRAWN)) {
 		pngdraw(im);
+	}
 }
 
 void xhints()

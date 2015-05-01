@@ -31,7 +31,7 @@ typedef enum {
 	DRAWN = 4
 } imgstate;
 
-struct image {
+typedef struct {
 	unsigned char *buf;
 	unsigned int bufwidth, bufheight;
 	imgstate state;
@@ -40,11 +40,11 @@ struct image {
 	png_structp png_ptr;
 	png_infop info_ptr;
 	int numpasses;
-};
+} Image;
 
 typedef struct {
 	char *text;
-	struct image *img;
+	Image *img;
 } Slide;
 
 /* Purely graphic info */
@@ -78,11 +78,11 @@ typedef struct {
 	const Arg arg;
 } Shortcut;
 
-static struct image *pngopen(char *filename);
-static int pngread(struct image *img);
-static int pngprepare(struct image *img);
-static void pngscale(struct image *img);
-static void pngdraw(struct image *img);
+static Image *pngopen(char *filename);
+static int pngread(Image *img);
+static int pngprepare(Image *img);
+static void pngscale(Image *img);
+static void pngdraw(Image *img);
 
 static void getfontsize(char *str, unsigned int *width, unsigned int *height);
 static void cleanup();
@@ -126,11 +126,11 @@ static void (*handler[LASTEvent])(XEvent *) = {
 	[KeyPress] = kpress,
 };
 
-struct image *pngopen(char *filename)
+Image *pngopen(char *filename)
 {
 	FILE *f;
 	unsigned char buf[8];
-	struct image *img;
+	Image *img;
 
 	if (!(f = fopen(filename, "rb"))) {
 		eprintf("could not open file %s:", filename);
@@ -140,7 +140,7 @@ struct image *pngopen(char *filename)
 	if (fread(buf, 1, 8, f) != 8 || png_sig_cmp(buf, 1, 8))
 		return NULL;
 
-	img = malloc(sizeof(struct image));
+	img = malloc(sizeof(Image));
 	if (!(img->png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL,
 					NULL, NULL))) {
 		free(img);
@@ -167,7 +167,7 @@ struct image *pngopen(char *filename)
 	return img;
 }
 
-int pngread(struct image *img)
+int pngread(Image *img)
 {
 	unsigned int y;
 	png_bytepp row_pointers;
@@ -232,7 +232,7 @@ int pngread(struct image *img)
 	return 1;
 }
 
-int pngprepare(struct image *img)
+int pngprepare(Image *img)
 {
 	int depth = DefaultDepth(xw.dpy, xw.scr);
 	int width = xw.uw;
@@ -274,7 +274,7 @@ int pngprepare(struct image *img)
 	return 1;
 }
 
-void pngscale(struct image *img)
+void pngscale(Image *img)
 {
 	unsigned int x, y;
 	unsigned int width = img->ximg->width;
@@ -299,7 +299,7 @@ void pngscale(struct image *img)
 	}
 }
 
-void pngdraw(struct image *img)
+void pngdraw(Image *img)
 {
 	int xoffset = (xw.w - img->ximg->width) / 2;
 	int yoffset = (xw.h - img->ximg->height) / 2;
@@ -463,7 +463,7 @@ void usage()
 void xdraw()
 {
 	unsigned int height, width;
-	struct image *im = slides[idx].img;
+	Image *im = slides[idx].img;
 
 	getfontsize(slides[idx].text, &width, &height);
 	XClearWindow(xw.dpy, xw.win);

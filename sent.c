@@ -555,7 +555,6 @@ void xloadfonts(char *fontstr)
 		}
 		fonts[i] = drw_fontset_create(d, (const char**)fstrs, LEN(fstrs));
 	}
-	drw_setfontset(d, fonts[19]);
 }
 
 void bpress(XEvent *e)

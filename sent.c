@@ -431,6 +431,7 @@ void resize(int width, int height)
 	xw.h = height;
 	xw.uw = usablewidth * width;
 	xw.uh = usableheight * height;
+	drw_resize(d, width, height);
 }
 
 void run()
@@ -592,7 +593,6 @@ void kpress(XEvent *e)
 void configure(XEvent *e)
 {
 	resize(e->xconfigure.width, e->xconfigure.height);
-	drw_resize(d, e->xconfigure.width, e->xconfigure.height);
 	if (slides[idx].img)
 		slides[idx].img->state &= ~(DRAWN | SCALED);
 	xdraw();

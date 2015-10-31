@@ -1,9 +1,10 @@
 sent
+takahashi
 why?
 @nyan.png
 easy to use
 depends on Xlib, libpng
-no bloat
+~1000 lines of code
 how?
 sent FILENAME
 one slide per line

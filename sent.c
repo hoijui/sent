@@ -312,17 +312,18 @@ void pngdraw(Image *img)
 void getfontsize(char *str, unsigned int *width, unsigned int *height)
 {
 	size_t i;
-	size_t len = strlen(str);
 
 	for (i = 0; i < NUMFONTSCALES; i++) {
 		drw_setfontset(d, fonts[i]);
-		drw_font_getexts(fonts[i], str, len, width, height);
+		*height = fonts[i]->h;
+		*width = drw_fontset_getwidth(d, str);
 		if (*width  > xw.uw || *height > xw.uh)
 			break;
 	}
 	if (i > 0) {
 		drw_setfontset(d, fonts[i-1]);
-		drw_font_getexts(fonts[i-1], str, len, width, height);
+		*height = fonts[i-1]->h;
+		*width = drw_fontset_getwidth(d, str);
 	}
 	*width += d->fonts->h;
 }

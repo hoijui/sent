@@ -379,7 +379,7 @@ unsigned int
 drw_fontset_getwidth(Drw *drw, const char *text) {
 	if (!drw || !drw->fonts || !text)
 		return 0;
-	return drw_text(drw, 0, 0, 0, 0, text, 0) + drw->fonts->h;
+	return drw_text(drw, 0, 0, 0, 0, text, 0);
 }
 
 void

@@ -97,7 +97,7 @@ static void usage();
 static void xdraw();
 static void xhints();
 static void xinit();
-static void xloadfonts(char *);
+static void xloadfonts();
 
 static void bpress(XEvent *);
 static void cmessage(XEvent *);
@@ -454,8 +454,8 @@ void run()
 
 void usage()
 {
-	die("sent " VERSION " (c) 2014 markus.teich@stusta.mhn.de\n" \
-	"usage: sent [-f font] FILE1 [FILE2 ...]", argv0);
+	die("sent " VERSION " (c) 2015 markus.teich@stusta.mhn.de\n" \
+	"usage: sent FILE1 [FILE2 ...]", argv0);
 }
 
 void xdraw()
@@ -525,7 +525,7 @@ void xinit()
 	sc = drw_scm_create(d, "#000000", "#FFFFFF");
 	drw_setscheme(d, sc);
 
-	xloadfonts(font);
+	xloadfonts();
 
 	XStringListToTextProperty(&argv0, 1, &prop);
 	XSetWMName(xw.dpy, xw.win, &prop);
@@ -536,7 +536,7 @@ void xinit()
 	XSync(xw.dpy, False);
 }
 
-void xloadfonts(char *fontstr)
+void xloadfonts()
 {
 	int i, j;
 	char *fstrs[LEN(fontfallbacks)];
@@ -601,9 +601,6 @@ int main(int argc, char *argv[])
 	FILE *fp = NULL;
 
 	ARGBEGIN {
-	case 'f':
-		font = EARGF(usage());
-		break;
 	case 'v':
 	default:
 		usage();

@@ -279,8 +279,8 @@ void pngscale(Image *img)
 	unsigned int x, y;
 	unsigned int width = img->ximg->width;
 	unsigned int height = img->ximg->height;
-	char* __restrict__ newBuf = img->ximg->data;
-	unsigned char * __restrict__ ibuf;
+	char* newBuf = img->ximg->data;
+	unsigned char* ibuf;
 	unsigned int jdy = img->ximg->bytes_per_line / 4 - width;
 	unsigned int dx = (img->bufwidth << 10) / width;
 

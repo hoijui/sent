@@ -381,7 +381,7 @@ void load(FILE *fp)
 	char buf[BUFSIZ], *p;
 	size_t i = slidecount;
 
-	/* read each line from stdin and add it to the item list */
+	/* read each line from fp and add it to the item list */
 	while (fgets(buf, sizeof(buf), fp)) {
 		if ((i+1) * sizeof(*slides) >= size)
 			if (!(slides = realloc(slides, (size += BUFSIZ))))
@@ -454,7 +454,7 @@ void run()
 
 void usage()
 {
-	die("sent " VERSION " (c) 2015 markus.teich@stusta.mhn.de\n" \
+	die("sent " VERSION " (c) 2014-2015 markus.teich@stusta.mhn.de\n" \
 	"usage: sent FILE1 [FILE2 ...]", argv0);
 }
 

@@ -522,7 +522,7 @@ void xinit()
 
 	if (!(d = drw_create(xw.dpy, xw.scr, xw.win, xw.w, xw.h)))
 		die("Can't create drawing context.");
-	sc = drw_scm_create(d, "#000000", "#FFFFFF");
+	sc = drw_scm_create(d, fgcol, bgcol);
 	drw_setscheme(d, sc);
 
 	xloadfonts();

@@ -8,6 +8,9 @@ static char *fontfallbacks[] = {
 #define NUMFONTSCALES 30
 #define FONTSZ(x) ((int)(10.0 * powf(1.1288, (x)))) /* x in [0, NUMFONTSCALES-1] */
 
+static const char *fgcol = "#000000";
+static const char *bgcol = "#FFFFFF";
+
 /* how much screen estate is to be used at max for the content */
 static float usablewidth = 0.75;
 static float usableheight = 0.75;

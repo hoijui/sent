@@ -622,5 +622,5 @@ int main(int argc, char *argv[])
 	run();
 
 	cleanup();
-	return EXIT_SUCCESS;
+	return 0;
 }

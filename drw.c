@@ -107,8 +107,8 @@ drw_font_xcreate(Drw *drw, const char *fontname, FcPattern *fontpattern) {
 		return NULL;
 
 	if (fontname) {
-		/* Using the pattern found at font->xfont->pattern does not yield same
-		 * the same substitution results as using the pattern returned by
+		/* Using the pattern found at font->xfont->pattern does not yield the
+		 * same substitution results as using the pattern returned by
 		 * FcNameParse; using the latter results in the desired fallback
 		 * behaviour whereas the former just results in
 		 * missing-character-rectangles being drawn, at least with some fonts.

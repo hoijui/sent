@@ -11,6 +11,8 @@ static char *fontfallbacks[] = {
 static const char *fgcol = "#000000";
 static const char *bgcol = "#FFFFFF";
 
+static const float linespacing = 1.4;
+
 /* how much screen estate is to be used at max for the content */
 static const float usablewidth = 0.75;
 static const float usableheight = 0.75;

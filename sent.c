@@ -43,7 +43,8 @@ typedef struct {
 } Image;
 
 typedef struct {
-	char *text;
+	unsigned int linecount;
+	char **lines;
 	Image *img;
 } Slide;
 
@@ -85,7 +86,7 @@ static int pngprepare(Image *img);
 static void pngscale(Image *img);
 static void pngdraw(Image *img);
 
-static void getfontsize(char *str, unsigned int *width, unsigned int *height);
+static void getfontsize(Slide *s, unsigned int *width, unsigned int *height);
 static void cleanup();
 static void eprintf(const char *, ...);
 static void die(const char *, ...);
@@ -149,7 +150,7 @@ Image *pngopen(char *filename)
 		return NULL;
 	}
 	if (!(img->info_ptr = png_create_info_struct(img->png_ptr))
-		|| setjmp(png_jmpbuf(img->png_ptr))) {
+	    || setjmp(png_jmpbuf(img->png_ptr))) {
 		pngfree(img);
 		return NULL;
 	}
@@ -315,28 +316,38 @@ void pngdraw(Image *img)
 	img->state |= DRAWN;
 }
 
-void getfontsize(char *str, unsigned int *width, unsigned int *height)
+void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 {
-	size_t i;
+	size_t i, j;
+	unsigned int curw, imax;
+	float lfac = linespacing * (s->linecount - 1) + 1;
 
-	for (i = 0; i < NUMFONTSCALES; i++) {
-		drw_setfontset(d, fonts[i]);
-		*height = fonts[i]->h;
-		*width = drw_fontset_getwidth(d, str);
-		if (*width  > xw.uw || *height > xw.uh)
+	/* fit height */
+	for (j = NUMFONTSCALES - 1; j >= 0; j--)
+		if (fonts[j]->h * lfac <= xw.uh)
 			break;
+	drw_setfontset(d, fonts[j]);
+
+	/* fit width */
+	*width = 0;
+	for (i = 0; i < s->linecount; i++) {
+		curw = drw_fontset_getwidth(d, s->lines[i]);
+		if (curw >= *width)
+			imax = i;
+		while (j >= 0 && curw > xw.uw) {
+			drw_setfontset(d, fonts[--j]);
+			curw = drw_fontset_getwidth(d, s->lines[i]);
+		}
+		if (imax == i)
+			*width = curw;
 	}
-	if (i > 0) {
-		drw_setfontset(d, fonts[i-1]);
-		*height = fonts[i-1]->h;
-		*width = drw_fontset_getwidth(d, str);
-	}
-	*width += d->fonts->h;
+	*height = fonts[j]->h * lfac;
+	*width += fonts[j]->h;
 }
 
 void cleanup()
 {
-	unsigned int i;
+	unsigned int i, j;
 
 	for (i = 0; i < NUMFONTSCALES; i++)
 		drw_fontset_free(fonts[i]);
@@ -348,8 +359,9 @@ void cleanup()
 	XCloseDisplay(xw.dpy);
 	if (slides) {
 		for (i = 0; i < slidecount; i++) {
-			if (slides[i].text)
-				free(slides[i].text);
+			for (j = 0; j < slides[i].linecount; j++)
+				free(slides[i].lines[j]);
+			free(slides[i].lines);
 			if (slides[i].img)
 				pngfree(slides[i].img);
 		}
@@ -394,27 +406,57 @@ void eprintf(const char *fmt, ...)
 void load(FILE *fp)
 {
 	static size_t size = 0;
+	size_t blen, maxlines;
 	char buf[BUFSIZ], *p;
-	size_t i = slidecount;
+	Slide *s;
 
 	/* read each line from fp and add it to the item list */
-	while (fgets(buf, sizeof(buf), fp)) {
-		if ((i+1) * sizeof(*slides) >= size)
+	while (1) {
+		if ((slidecount+1) * sizeof(*slides) >= size)
 			if (!(slides = realloc(slides, (size += BUFSIZ))))
 				die("cannot realloc %u bytes:", size);
-		if (*buf == '#')
-			continue;
-		if ((p = strchr(buf, '\n')))
-			*p = '\0';
-		if (!(slides[i].text = strdup(buf)))
-			die("cannot strdup %u bytes:", strlen(buf)+1);
-		if (slides[i].text[0] == '@')
-			slides[i].img = pngopen(slides[i].text + 1);
-		else
-			slides[i].img = 0;
-		i++;
+
+		/* eat consecutive empty lines */
+		while ((p = fgets(buf, sizeof(buf), fp)))
+			if (strcmp(buf, "\n") != 0 && buf[0] != '#')
+				break;
+		if (!p)
+			break;
+
+		/* read one slide */
+		maxlines = 0;
+		memset((s = &slides[slidecount]), 0, sizeof(Slide));
+		do {
+			if (buf[0] == '#')
+				continue;
+
+			/* grow lines array */
+			if (s->linecount >= maxlines) {
+				maxlines = 2 * s->linecount + 1;
+				if (!(s->lines = realloc(s->lines, maxlines * sizeof(s->lines[0]))))
+					die("cannot realloc %u bytes:", maxlines * sizeof(s->lines[0]));
+			}
+
+			blen = strlen(buf);
+			if (!(s->lines[s->linecount] = strdup(buf)))
+				die("cannot strdup:");
+			if (s->lines[s->linecount][blen-1] == '\n')
+				s->lines[s->linecount][blen-1] = '\0';
+
+			/* only make image slide if first line of a slide starts with @ */
+			if (s->linecount == 0 && s->lines[0][0] == '@') {
+				memmove(s->lines[0], &s->lines[0][1], blen);
+				s->img = pngopen(s->lines[0]);
+			}
+
+			if (s->lines[s->linecount][0] == '\\')
+				memmove(s->lines[s->linecount], &s->lines[s->linecount][1], blen);
+			s->linecount++;
+		} while ((p = fgets(buf, sizeof(buf), fp)) && strcmp(buf, "\n") != 0);
+		slidecount++;
+		if (!p)
+			break;
 	}
-	slidecount = i;
 }
 
 void advance(const Arg *arg)
@@ -427,9 +469,9 @@ void advance(const Arg *arg)
 		idx = new_idx;
 		xdraw();
 		if (slidecount > idx + 1 && slides[idx + 1].img && !pngread(slides[idx + 1].img))
-			die("could not read image %s", slides[idx + 1].text + 1);
+			die("could not read image %s", slides[idx + 1].lines[0]);
 		if (0 < idx && slides[idx - 1].img && !pngread(slides[idx - 1].img))
-			die("could not read image %s", slides[idx - 1].text + 1);
+			die("could not read image %s", slides[idx - 1].lines[0]);
 	}
 }
 
@@ -476,20 +518,27 @@ void usage()
 
 void xdraw()
 {
-	unsigned int height, width;
+	unsigned int height, width, i;
 	Image *im = slides[idx].img;
 
-	getfontsize(slides[idx].text, &width, &height);
+	getfontsize(&slides[idx], &width, &height);
 	XClearWindow(xw.dpy, xw.win);
 
 	if (!im) {
 		drw_rect(d, 0, 0, xw.w, xw.h, 1, 1);
-		drw_text(d, (xw.w - width) / 2, (xw.h - height) / 2, width, height, slides[idx].text, 0);
+		for (i = 0; i < slides[idx].linecount; i++)
+			drw_text(d,
+			         (xw.w - width) / 2,
+			         (xw.h - height) / 2 + i * linespacing * d->fonts->h,
+			         width,
+			         d->fonts->h,
+			         slides[idx].lines[i],
+			         0);
 		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
 	} else if (!(im->state & LOADED) && !pngread(im)) {
-		eprintf("could not read image %s", slides[idx].text + 1);
+		eprintf("could not read image %s", slides[idx].lines[0]);
 	} else if (!(im->state & SCALED) && !pngprepare(im)) {
-		eprintf("could not prepare image %s for drawing", slides[idx].text + 1);
+		eprintf("could not prepare image %s for drawing", slides[idx].lines[0]);
 	} else if (!(im->state & DRAWN)) {
 		pngdraw(im);
 	}
@@ -634,7 +683,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (!slides || !slides[0].text)
+	if (!slides || !slides[0].lines)
 		usage();
 
 	xinit();

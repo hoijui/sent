@@ -1,14 +1,58 @@
 sent
-takahashi
-why?
+
+Origin:
+     Takahashi
+
+Why?
+• PPTX sucks
+• LATEX sucks
+• PDF sucks
+
+also:
+terminal presentations
+don't support images…
+
 @nyan.png
+this text will not be displayed, since the @ at the start of the first line
+makes this paragraph an image slide.
+
 easy to use
-depends on Xlib, libpng
+
+depends on
+♽ Xlib
+☢ libpng
+
 ~1000 lines of code
-how?
-sent FILENAME
-one slide per line
+
+usage:
+$ sent FILE1 [FILE2 …]
+
+▸ one slide per paragraph
+▸ lines starting with # are ignored
+▸ paragraphs starting with a @ line are png images
+▸ for an empty slide just use a \ as a paragraph
+
 # This is a comment and will not be part of the presentation
-# The next line starts with a whitespace, it will not produce an image slide
- @FILE.png
-thanks / questions?
+
+# multiple empty lines between paragraphs are also ignored
+
+
+# The following lines should produce
+# one empty slide
+
+
+
+\
+\
+
+\@this_line_actually_started_with_a_\.png
+\#This line as well
+⇒ Prepend a backslash to kill behaviour of special characters
+
+😀😁😂😃😄😅😆😇😈😉😊😋😌😍😎😏
+😐😑😒😓😔😕😖😗😘😙😚😛😜😝😞😟
+😠😡😢😣😥😦😧😨😩😪😫😭😮😯😰😱
+😲😳😴😵😶😷😸😹😺😻😼😽😾😿🙀☠
+
+thanks
+questions?

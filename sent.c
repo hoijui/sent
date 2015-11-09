@@ -394,6 +394,8 @@ void load(FILE *fp)
 			die("cannot strdup %u bytes:", strlen(buf)+1);
 		if (slides[i].text[0] == '@')
 			slides[i].img = pngopen(slides[i].text + 1);
+		else
+			slides[i].img = 0;
 		i++;
 	}
 	if (slides)

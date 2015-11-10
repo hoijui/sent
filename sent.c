@@ -506,8 +506,7 @@ void xinit()
 		die("Can't open display.");
 	xw.scr = XDefaultScreen(xw.dpy);
 	xw.vis = XDefaultVisual(xw.dpy, xw.scr);
-	xw.w = DisplayWidth(xw.dpy, xw.scr);
-	xw.h = DisplayHeight(xw.dpy, xw.scr);
+	resize(DisplayWidth(xw.dpy, xw.scr), DisplayHeight(xw.dpy, xw.scr));
 
 	xw.attrs.background_pixel = WhitePixel(xw.dpy, xw.scr);
 	xw.attrs.bit_gravity = CenterGravity;

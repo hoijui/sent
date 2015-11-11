@@ -87,7 +87,6 @@ drw_resize(Drw *drw, unsigned int w, unsigned int h) {
 
 void
 drw_free(Drw *drw) {
-	drw_fontset_free(drw->fonts);
 	XFreePixmap(drw->dpy, drw->drawable);
 	XFreeGC(drw->dpy, drw->gc);
 	free(drw);

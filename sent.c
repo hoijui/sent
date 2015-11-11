@@ -334,6 +334,8 @@ void cleanup()
 {
 	unsigned int i;
 
+	for (i = 0; i < NUMFONTSCALES; i++)
+		drw_fontset_free(fonts[i]);
 	drw_scm_free(sc);
 	drw_free(d);
 

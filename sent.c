@@ -79,6 +79,7 @@ typedef struct {
 } Shortcut;
 
 static Image *pngopen(char *filename);
+static void pngfree(Image *img);
 static int pngread(Image *img);
 static int pngprepare(Image *img);
 static void pngscale(Image *img);
@@ -146,14 +147,9 @@ Image *pngopen(char *filename)
 		free(img);
 		return NULL;
 	}
-	if (!(img->info_ptr = png_create_info_struct(img->png_ptr))) {
-		png_destroy_read_struct(&img->png_ptr, NULL, NULL);
-		free(img);
-		return NULL;
-	}
-	if (setjmp(png_jmpbuf(img->png_ptr))) {
-		png_destroy_read_struct(&img->png_ptr, &img->info_ptr, NULL);
-		free(img);
+	if (!(img->info_ptr = png_create_info_struct(img->png_ptr))
+		|| setjmp(png_jmpbuf(img->png_ptr))) {
+		pngfree(img);
 		return NULL;
 	}
 
@@ -165,6 +161,12 @@ Image *pngopen(char *filename)
 	img->bufheight = png_get_image_height(img->png_ptr, img->info_ptr);
 
 	return img;
+}
+
+void pngfree(Image *img)
+{
+	png_destroy_read_struct(&img->png_ptr, img->info_ptr ? &img->info_ptr : NULL, NULL);
+	free(img);
 }
 
 int pngread(Image *img)
@@ -330,6 +332,8 @@ void getfontsize(char *str, unsigned int *width, unsigned int *height)
 
 void cleanup()
 {
+	unsigned int i;
+
 	drw_scm_free(sc);
 	drw_free(d);
 
@@ -337,6 +341,10 @@ void cleanup()
 	XSync(xw.dpy, False);
 	XCloseDisplay(xw.dpy);
 	if (slides) {
+		for (i = 0; i < slidecount; i++) {
+			if (slides[i].img)
+				pngfree(slides[i].img);
+		}
 		free(slides);
 		slides = NULL;
 	}

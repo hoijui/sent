@@ -562,6 +562,10 @@ void xloadfonts()
 		}
 		fonts[i] = drw_fontset_create(d, (const char**)fstrs, LEN(fstrs));
 	}
+
+	for (j = 0; j < LEN(fontfallbacks); j++)
+		if (fstrs[j])
+			free(fstrs[j]);
 }
 
 void bpress(XEvent *e)

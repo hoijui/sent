@@ -12,8 +12,8 @@ static const char *fgcol = "#000000";
 static const char *bgcol = "#FFFFFF";
 
 /* how much screen estate is to be used at max for the content */
-static float usablewidth = 0.75;
-static float usableheight = 0.75;
+static const float usablewidth = 0.75;
+static const float usableheight = 0.75;
 
 static Mousekey mshortcuts[] = {
 	/* button         function        argument */

@@ -142,6 +142,7 @@ Image *pngopen(char *filename)
 		return NULL;
 
 	img = malloc(sizeof(Image));
+	memset(img, 0, sizeof(Image));
 	if (!(img->png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL,
 					NULL, NULL))) {
 		free(img);
@@ -166,6 +167,9 @@ Image *pngopen(char *filename)
 void pngfree(Image *img)
 {
 	png_destroy_read_struct(&img->png_ptr, img->info_ptr ? &img->info_ptr : NULL, NULL);
+	free(img->buf);
+	if (img->ximg)
+		XDestroyImage(img->ximg);
 	free(img);
 }
 
@@ -344,6 +348,8 @@ void cleanup()
 	XCloseDisplay(xw.dpy);
 	if (slides) {
 		for (i = 0; i < slidecount; i++) {
+			if (slides[i].text)
+				free(slides[i].text);
 			if (slides[i].img)
 				pngfree(slides[i].img);
 		}
@@ -408,8 +414,6 @@ void load(FILE *fp)
 			slides[i].img = 0;
 		i++;
 	}
-	if (slides)
-		slides[i].text = NULL;
 	slidecount = i;
 }
 

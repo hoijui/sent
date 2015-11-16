@@ -326,7 +326,8 @@ void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 	for (j = NUMFONTSCALES - 1; j >= 0; j--)
 		if (fonts[j]->h * lfac <= xw.uh)
 			break;
-	drw_setfontset(d, fonts[++j]);
+	LIMIT(j, 0, NUMFONTSCALES - 1);
+	drw_setfontset(d, fonts[j]);
 
 	/* fit width */
 	*width = 0;

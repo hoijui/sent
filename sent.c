@@ -318,7 +318,7 @@ void pngdraw(Image *img)
 
 void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 {
-	size_t i, j;
+	int i, j;
 	unsigned int curw, imax;
 	float lfac = linespacing * (s->linecount - 1) + 1;
 
@@ -326,7 +326,7 @@ void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 	for (j = NUMFONTSCALES - 1; j >= 0; j--)
 		if (fonts[j]->h * lfac <= xw.uh)
 			break;
-	drw_setfontset(d, fonts[j]);
+	drw_setfontset(d, fonts[++j]);
 
 	/* fit width */
 	*width = 0;
@@ -334,7 +334,7 @@ void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 		curw = drw_fontset_getwidth(d, s->lines[i]);
 		if (curw >= *width)
 			imax = i;
-		while (j >= 0 && curw > xw.uw) {
+		while (j > 0 && curw > xw.uw) {
 			drw_setfontset(d, fonts[--j]);
 			curw = drw_fontset_getwidth(d, s->lines[i]);
 		}

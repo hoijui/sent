@@ -29,8 +29,8 @@ $ sent FILE1 [FILE2 …]
 
 ▸ one slide per paragraph
 ▸ lines starting with # are ignored
-▸ paragraphs starting with a @ line are png images
-▸ for an empty slide just use a \ as a paragraph
+▸ image slide: paragraph containing @FILE.png
+▸ empty slide: just use a \ as a paragraph
 
 # This is a comment and will not be part of the presentation
 

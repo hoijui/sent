@@ -572,14 +572,13 @@ void xinit()
 	xw.vis = XDefaultVisual(xw.dpy, xw.scr);
 	resize(DisplayWidth(xw.dpy, xw.scr), DisplayHeight(xw.dpy, xw.scr));
 
-	xw.attrs.background_pixel = WhitePixel(xw.dpy, xw.scr);
 	xw.attrs.bit_gravity = CenterGravity;
 	xw.attrs.event_mask = KeyPressMask | ExposureMask | StructureNotifyMask
 		| ButtonMotionMask | ButtonPressMask;
 
 	xw.win = XCreateWindow(xw.dpy, XRootWindow(xw.dpy, xw.scr), 0, 0,
 			xw.w, xw.h, 0, XDefaultDepth(xw.dpy, xw.scr), InputOutput, xw.vis,
-			CWBackPixel | CWBitGravity | CWEventMask, &xw.attrs);
+			CWBitGravity | CWEventMask, &xw.attrs);
 
 	xw.wmdeletewin = XInternAtom(xw.dpy, "WM_DELETE_WINDOW", False);
 	xw.netwmname = XInternAtom(xw.dpy, "_NET_WM_NAME", False);
@@ -589,6 +588,7 @@ void xinit()
 		die("Can't create drawing context.");
 	sc = drw_scm_create(d, fgcol, bgcol);
 	drw_setscheme(d, sc);
+	XSetWindowBackground(xw.dpy, xw.win, sc->bg.pix);
 
 	xloadfonts();
 

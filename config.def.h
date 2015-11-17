@@ -29,6 +29,7 @@ static Shortcut shortcuts[] = {
 	{ XK_Right,       advance,        {.i = +1} },
 	{ XK_Left,        advance,        {.i = -1} },
 	{ XK_Return,      advance,        {.i = +1} },
+	{ XK_space,       advance,        {.i = +1} },
 	{ XK_BackSpace,   advance,        {.i = -1} },
 	{ XK_l,           advance,        {.i = +1} },
 	{ XK_h,           advance,        {.i = -1} },

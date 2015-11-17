@@ -616,7 +616,8 @@ void xloadfonts()
 			if (MAXFONTSTRLEN < snprintf(fstrs[j], MAXFONTSTRLEN, "%s:size=%d", fontfallbacks[j], FONTSZ(i)))
 				die("font string too long");
 		}
-		fonts[i] = drw_fontset_create(d, (const char**)fstrs, LEN(fstrs));
+		if (!(fonts[i] = drw_fontset_create(d, (const char**)fstrs, LEN(fstrs))))
+			die("unable to load any font for size %d", FONTSZ(i));
 	}
 
 	for (j = 0; j < LEN(fontfallbacks); j++)

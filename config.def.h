@@ -25,6 +25,7 @@ static Mousekey mshortcuts[] = {
 
 static Shortcut shortcuts[] = {
 	/* keysym         function        argument */
+	{ XK_Escape,      quit,           {0} },
 	{ XK_q,           quit,           {0} },
 	{ XK_Right,       advance,        {.i = +1} },
 	{ XK_Left,        advance,        {.i = -1} },

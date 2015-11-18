@@ -413,16 +413,16 @@ void load(FILE *fp)
 
 	/* read each line from fp and add it to the item list */
 	while (1) {
-		if ((slidecount+1) * sizeof(*slides) >= size)
-			if (!(slides = realloc(slides, (size += BUFSIZ))))
-				die("cannot realloc %u bytes:", size);
-
 		/* eat consecutive empty lines */
 		while ((p = fgets(buf, sizeof(buf), fp)))
 			if (strcmp(buf, "\n") != 0 && buf[0] != '#')
 				break;
 		if (!p)
 			break;
+
+		if ((slidecount+1) * sizeof(*slides) >= size)
+			if (!(slides = realloc(slides, (size += BUFSIZ))))
+				die("cannot realloc %u bytes:", size);
 
 		/* read one slide */
 		maxlines = 0;

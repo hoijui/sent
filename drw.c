@@ -396,9 +396,9 @@ drw_font_getexts(Fnt *font, const char *text, unsigned int len, unsigned int *w,
 
 Cur *
 drw_cur_create(Drw *drw, int shape) {
-	Cur *cur = (Cur *)calloc(1, sizeof(Cur));
+	Cur *cur;
 
-	if(!drw || !cur)
+	if(!drw || !(cur = (Cur *)calloc(1, sizeof(Cur))))
 		return NULL;
 	cur->cursor = XCreateFontCursor(drw->dpy, shape);
 	return cur;

@@ -685,7 +685,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (!slides || !slides[0].lines)
+	if (!slidecount)
 		usage();
 
 	xinit();

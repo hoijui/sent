@@ -45,3 +45,8 @@ static Shortcut shortcuts[] = {
 	{ XK_n,           advance,        {.i = +1} },
 	{ XK_p,           advance,        {.i = -1} },
 };
+
+static Filter filters[] = {
+	{ "\\.png$",       "png2ff" },
+	{ "\\.(jpg|gif)$", "2ff" },
+};

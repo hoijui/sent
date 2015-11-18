@@ -33,7 +33,6 @@ presentation file could look like this:
 	
 	depends on
 	- Xlib
-	- libpng
 	
 	sent FILENAME
 	one slide per paragraph

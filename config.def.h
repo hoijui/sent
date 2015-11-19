@@ -20,7 +20,9 @@ static const float usableheight = 0.75;
 static Mousekey mshortcuts[] = {
 	/* button         function        argument */
 	{ Button1,        advance,        {.i = +1} },
-	{ Button2,        advance,        {.i = -1} },
+	{ Button3,        advance,        {.i = -1} },
+	{ Button4,        advance,        {.i = -1} },
+	{ Button5,        advance,        {.i = +1} },
 };
 
 static Shortcut shortcuts[] = {

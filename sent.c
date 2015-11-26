@@ -135,7 +135,7 @@ Image *pngopen(char *filename)
 	Image *img;
 
 	if (!(f = fopen(filename, "rb"))) {
-		eprintf("could not open file %s:", filename);
+		eprintf("Unable to open file %s:", filename);
 		return NULL;
 	}
 
@@ -251,25 +251,25 @@ int pngprepare(Image *img)
 		height = img->bufheight * xw.uw / img->bufwidth;
 
 	if (depth < 24) {
-		eprintf("display depths <24 not supported.");
+		eprintf("Display depths <24 not supported.");
 		return 0;
 	}
 
 	if (!(img->ximg = XCreateImage(xw.dpy, CopyFromParent, depth, ZPixmap, 0,
 				NULL, width, height, 32, 0))) {
-		eprintf("could not create XImage");
+		eprintf("Unable to create XImage.");
 		return 0;
 	}
 
 	if (!(img->ximg->data = malloc(img->ximg->bytes_per_line * height))) {
-		eprintf("could not alloc data section for XImage");
+		eprintf("Unable to alloc data section for XImage.");
 		XDestroyImage(img->ximg);
 		img->ximg = NULL;
 		return 0;
 	}
 
 	if (!XInitImage(img->ximg)) {
-		eprintf("could not init XImage");
+		eprintf("Unable to init XImage.");
 		free(img->ximg->data);
 		XDestroyImage(img->ximg);
 		img->ximg = NULL;
@@ -422,7 +422,7 @@ void load(FILE *fp)
 
 		if ((slidecount+1) * sizeof(*slides) >= size)
 			if (!(slides = realloc(slides, (size += BUFSIZ))))
-				die("cannot realloc %u bytes:", size);
+				die("Unable to realloc %u bytes:", size);
 
 		/* read one slide */
 		maxlines = 0;
@@ -435,12 +435,12 @@ void load(FILE *fp)
 			if (s->linecount >= maxlines) {
 				maxlines = 2 * s->linecount + 1;
 				if (!(s->lines = realloc(s->lines, maxlines * sizeof(s->lines[0]))))
-					die("cannot realloc %u bytes:", maxlines * sizeof(s->lines[0]));
+					die("Unable to realloc %u bytes:", maxlines * sizeof(s->lines[0]));
 			}
 
 			blen = strlen(buf);
 			if (!(s->lines[s->linecount] = strdup(buf)))
-				die("cannot strdup:");
+				die("Unable to strdup:");
 			if (s->lines[s->linecount][blen-1] == '\n')
 				s->lines[s->linecount][blen-1] = '\0';
 
@@ -470,9 +470,9 @@ void advance(const Arg *arg)
 		idx = new_idx;
 		xdraw();
 		if (slidecount > idx + 1 && slides[idx + 1].img && !pngread(slides[idx + 1].img))
-			die("could not read image %s", slides[idx + 1].lines[0]);
+			die("Unable to read image %s.", slides[idx + 1].lines[0]);
 		if (0 < idx && slides[idx - 1].img && !pngread(slides[idx - 1].img))
-			die("could not read image %s", slides[idx - 1].lines[0]);
+			die("Unable to read image %s.", slides[idx - 1].lines[0]);
 	}
 }
 
@@ -537,9 +537,9 @@ void xdraw()
 			         0);
 		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
 	} else if (!(im->state & LOADED) && !pngread(im)) {
-		eprintf("could not read image %s", slides[idx].lines[0]);
+		eprintf("Unable to read image %s.", slides[idx].lines[0]);
 	} else if (!(im->state & SCALED) && !pngprepare(im)) {
-		eprintf("could not prepare image %s for drawing", slides[idx].lines[0]);
+		eprintf("Unable to prepare image %s for drawing.", slides[idx].lines[0]);
 	} else if (!(im->state & DRAWN)) {
 		pngdraw(im);
 	}
@@ -552,7 +552,7 @@ void xhints()
 	XSizeHints *sizeh = NULL;
 
 	if (!(sizeh = XAllocSizeHints()))
-		die("sent: Could not alloc size hints");
+		die("Unable to alloc size hints.");
 
 	sizeh->flags = PSize;
 	sizeh->height = xw.h;
@@ -567,7 +567,7 @@ void xinit()
 	XTextProperty prop;
 
 	if (!(xw.dpy = XOpenDisplay(NULL)))
-		die("Can't open display.");
+		die("Unable to open display.");
 	xw.scr = XDefaultScreen(xw.dpy);
 	xw.vis = XDefaultVisual(xw.dpy, xw.scr);
 	resize(DisplayWidth(xw.dpy, xw.scr), DisplayHeight(xw.dpy, xw.scr));
@@ -585,7 +585,7 @@ void xinit()
 	XSetWMProtocols(xw.dpy, xw.win, &xw.wmdeletewin, 1);
 
 	if (!(d = drw_create(xw.dpy, xw.scr, xw.win, xw.w, xw.h)))
-		die("Can't create drawing context.");
+		die("Unable to create drawing context.");
 	sc = drw_scm_create(d, fgcol, bgcol);
 	drw_setscheme(d, sc);
 	XSetWindowBackground(xw.dpy, xw.win, sc->bg.pix);
@@ -608,16 +608,16 @@ void xloadfonts()
 
 	for (j = 0; j < LEN(fontfallbacks); j++) {
 		if (!(fstrs[j] = malloc(MAXFONTSTRLEN)))
-			die("could not malloc fstrs");
+			die("Unable to malloc fstrs.");
 	}
 
 	for (i = 0; i < NUMFONTSCALES; i++) {
 		for (j = 0; j < LEN(fontfallbacks); j++) {
 			if (MAXFONTSTRLEN < snprintf(fstrs[j], MAXFONTSTRLEN, "%s:size=%d", fontfallbacks[j], FONTSZ(i)))
-				die("font string too long");
+				die("Font string too long.");
 		}
 		if (!(fonts[i] = drw_fontset_create(d, (const char**)fstrs, LEN(fstrs))))
-			die("unable to load any font for size %d", FONTSZ(i));
+			die("Unable to load any font for size %d.", FONTSZ(i));
 	}
 
 	for (j = 0; j < LEN(fontfallbacks); j++)
@@ -681,7 +681,7 @@ int main(int argc, char *argv[])
 			load(fp);
 			fclose(fp);
 		} else {
-			eprintf("could not open %s for reading:", argv[i]);
+			eprintf("Unable to open '%s' for reading:", argv[i]);
 		}
 	}
 

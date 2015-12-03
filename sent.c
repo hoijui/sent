@@ -386,6 +386,8 @@ void eprintf(const char *fmt, ...)
 {
 	va_list ap;
 
+	fputs("sent: ", stderr);
+
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);

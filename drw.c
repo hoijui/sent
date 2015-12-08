@@ -228,7 +228,7 @@ int
 drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, const char *text, int invert) {
 	char buf[1024];
 	int tx, ty, th;
-	unsigned int ew;
+	unsigned int ew = 0;
 	Colormap cmap;
 	Visual *vis;
 	XftDraw *d;

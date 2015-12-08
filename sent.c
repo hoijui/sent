@@ -162,22 +162,24 @@ filter(int fd, const char *cmd)
 Image *ffopen(char *filename)
 {
 	unsigned char hdr[16];
-	char *bin;
+	char *bin = NULL;
 	regex_t regex;
 	Image *img;
 	size_t i;
 	int tmpfd, fd;
 
-	for (bin = NULL, i = 0; i < LEN(filters); i++) {
+	for (i = 0; i < LEN(filters); i++) {
 		if (regcomp(&regex, filters[i].regex,
 		            REG_NOSUB | REG_EXTENDED | REG_ICASE))
 			continue;
 		if (!regexec(&regex, filename, 0, NULL, 0)) {
-			if (!(bin = filters[i].bin))
-				return NULL;
+			bin = filters[i].bin
 			break;
 		}
 	}
+
+	if (!bin)
+		return NULL;
 
 	if ((fd = open(filename, O_RDONLY)) < 0) {
 		eprintf("Unable to open file %s:", filename);
@@ -355,7 +357,7 @@ void ffdraw(Image *img)
 void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 {
 	int i, j;
-	unsigned int curw, imax;
+	unsigned int curw, new_max;
 	float lfac = linespacing * (s->linecount - 1) + 1;
 
 	/* fit height */
@@ -369,13 +371,12 @@ void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 	*width = 0;
 	for (i = 0; i < s->linecount; i++) {
 		curw = drw_fontset_getwidth(d, s->lines[i]);
-		if (curw >= *width)
-			imax = i;
+		newmax = (curw >= *width);
 		while (j > 0 && curw > xw.uw) {
 			drw_setfontset(d, fonts[--j]);
 			curw = drw_fontset_getwidth(d, s->lines[i]);
 		}
-		if (imax == i)
+		if (newmax)
 			*width = curw;
 	}
 	*height = fonts[j]->h * lfac;

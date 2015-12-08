@@ -186,7 +186,7 @@ Image *ffopen(char *filename)
 	tmpfd = fd;
 	fd = filter(fd, bin);
 	if (fd < 0)
-		eprintf("could not filter %s:", filename);
+		eprintf("Unable to filter %s:", filename);
 	close(tmpfd);
 
 	if (read(fd, hdr, 16) != 16)
@@ -218,7 +218,7 @@ int ffread(Image *img)
 	uint8_t opac;
 	uint8_t fg_r, fg_g, fg_b, bg_r, bg_g, bg_b;
 	size_t rowlen, off, nbytes;
-	ssize_t r;
+	ssize_t count;
 
 	if (!img)
 		return 0;
@@ -249,10 +249,10 @@ int ffread(Image *img)
 	for (off = 0, y = 0; y < img->bufheight; y++) {
 		nbytes = 0;
 		while (nbytes < rowlen) {
-			r = read(img->fd, (char *)row + nbytes, rowlen - nbytes);
-			if (r < 0)
-				eprintf("read:");
-			nbytes += r;
+			count = read(img->fd, (char *)row + nbytes, rowlen - nbytes);
+			if (count < 0)
+				eprintf("Unable to read from pipe:");
+			nbytes += count;
 		}
 		for (x = 0; x < rowlen / 2; x += 4) {
 			fg_r = ntohs(row[x + 0]) / 256;
@@ -346,7 +346,7 @@ void ffdraw(Image *img)
 	int xoffset = (xw.w - img->ximg->width) / 2;
 	int yoffset = (xw.h - img->ximg->height) / 2;
 	XPutImage(xw.dpy, xw.win, d->gc, img->ximg, 0, 0,
-			xoffset, yoffset, img->ximg->width, img->ximg->height);
+	          xoffset, yoffset, img->ximg->width, img->ximg->height);
 	XFlush(xw.dpy);
 	img->state |= DRAWN;
 }
@@ -604,12 +604,13 @@ void xinit()
 	resize(DisplayWidth(xw.dpy, xw.scr), DisplayHeight(xw.dpy, xw.scr));
 
 	xw.attrs.bit_gravity = CenterGravity;
-	xw.attrs.event_mask = KeyPressMask | ExposureMask | StructureNotifyMask
-		| ButtonMotionMask | ButtonPressMask;
+	xw.attrs.event_mask = KeyPressMask | ExposureMask | StructureNotifyMask |
+	                      ButtonMotionMask | ButtonPressMask;
 
 	xw.win = XCreateWindow(xw.dpy, XRootWindow(xw.dpy, xw.scr), 0, 0,
-			xw.w, xw.h, 0, XDefaultDepth(xw.dpy, xw.scr), InputOutput, xw.vis,
-			CWBitGravity | CWEventMask, &xw.attrs);
+	                       xw.w, xw.h, 0, XDefaultDepth(xw.dpy, xw.scr),
+	                       InputOutput, xw.vis, CWBitGravity | CWEventMask,
+	                       &xw.attrs);
 
 	xw.wmdeletewin = XInternAtom(xw.dpy, "WM_DELETE_WINDOW", False);
 	xw.netwmname = XInternAtom(xw.dpy, "_NET_WM_NAME", False);

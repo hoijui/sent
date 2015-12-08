@@ -1,13 +1,18 @@
 sent is a simple plaintext presentation tool.
 
 sent does not need latex, libreoffice or any other fancy file format, it uses
-plaintext files and png images. Every paragraph represents a slide in the
-presentation.
+plaintext files to describe the slides and can include images via farbfeld.
+Every paragraph represents a slide in the presentation.
 
 The presentation is displayed in a simple X11 window. The content of each slide
 is automatically scaled to fit the window and centered so you also don't have to
 worry about alignment. Instead you can really concentrate on the content.
 
+
+Dependencies
+
+You need Xlib to build sent and the farbfeld[0] tools installed to use images in
+your presentations.
 
 Demo
 
@@ -47,3 +52,6 @@ presentation file could look like this:
 Development
 
 sent is developed at http://tools.suckless.org/sent
+
+
+0: http://git.2f30.org/farbfeld/about/

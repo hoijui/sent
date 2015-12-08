@@ -173,7 +173,7 @@ Image *ffopen(char *filename)
 		            REG_NOSUB | REG_EXTENDED | REG_ICASE))
 			continue;
 		if (!regexec(&regex, filename, 0, NULL, 0)) {
-			bin = filters[i].bin
+			bin = filters[i].bin;
 			break;
 		}
 	}
@@ -357,7 +357,7 @@ void ffdraw(Image *img)
 void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 {
 	int i, j;
-	unsigned int curw, new_max;
+	unsigned int curw, newmax;
 	float lfac = linespacing * (s->linecount - 1) + 1;
 
 	/* fit height */

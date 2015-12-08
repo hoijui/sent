@@ -215,6 +215,8 @@ int ffread(Image *img)
 {
 	uint32_t y, x;
 	uint16_t *row;
+	uint8_t opac;
+	uint8_t fg_r, fg_g, fg_b, bg_r, bg_g, bg_b;
 	size_t rowlen, off, nbytes;
 	ssize_t r;
 
@@ -239,6 +241,11 @@ int ffread(Image *img)
 		return 0;
 	}
 
+	/* extract window background color channels for transparency */
+	bg_r = (sc->bg.pix >> 16) % 256;
+	bg_g = (sc->bg.pix >>  8) % 256;
+	bg_b = (sc->bg.pix >>  0) % 256;
+
 	for (off = 0, y = 0; y < img->bufheight; y++) {
 		nbytes = 0;
 		while (nbytes < rowlen) {
@@ -248,9 +255,15 @@ int ffread(Image *img)
 			nbytes += r;
 		}
 		for (x = 0; x < rowlen / 2; x += 4) {
-			img->buf[off++] = ntohs(row[x + 0]) / 257;
-			img->buf[off++] = ntohs(row[x + 1]) / 257;
-			img->buf[off++] = ntohs(row[x + 2]) / 257;
+			fg_r = ntohs(row[x + 0]) / 256;
+			fg_g = ntohs(row[x + 1]) / 256;
+			fg_b = ntohs(row[x + 2]) / 256;
+			opac = ntohs(row[x + 3]) / 256;
+			/* blend opaque part of image data with window background color to
+			 * emulate transparency */
+			img->buf[off++] = (fg_r * opac + bg_r * (255 - opac)) / 256;
+			img->buf[off++] = (fg_g * opac + bg_g * (255 - opac)) / 256;
+			img->buf[off++] = (fg_b * opac + bg_b * (255 - opac)) / 256;
 		}
 	}
 

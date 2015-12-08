@@ -173,7 +173,8 @@ Image *ffopen(char *filename)
 		            REG_NOSUB | REG_EXTENDED | REG_ICASE))
 			continue;
 		if (!regexec(&regex, filename, 0, NULL, 0)) {
-			bin = filters[i].bin;
+			if (!(bin = filters[i].bin))
+				return NULL;
 			break;
 		}
 	}

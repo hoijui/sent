@@ -153,7 +153,7 @@ filter(int fd, const char *cmd)
 		close(fds[0]);
 		close(fds[1]);
 		execlp("sh", "sh", "-c", cmd, (char *)0);
-		eprintf("execlp sh -c '%s':", cmd);
+		die("execlp sh -c '%s':", cmd);
 	}
 	close(fds[1]);
 	return fds[0];

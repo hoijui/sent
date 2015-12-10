@@ -152,8 +152,8 @@ filter(int fd, const char *cmd)
 		dup2(fds[1], 1);
 		close(fds[0]);
 		close(fds[1]);
-		execlp(cmd, cmd, (char *)0);
-		eprintf("execlp %s:", cmd);
+		execlp("sh", "sh", "-c", cmd, (char *)0);
+		eprintf("execlp sh -c '%s':", cmd);
 	}
 	close(fds[1]);
 	return fds[0];

@@ -258,15 +258,15 @@ int ffread(Image *img)
 			nbytes += count;
 		}
 		for (x = 0; x < rowlen / 2; x += 4) {
-			fg_r = ntohs(row[x + 0]) / 256;
-			fg_g = ntohs(row[x + 1]) / 256;
-			fg_b = ntohs(row[x + 2]) / 256;
-			opac = ntohs(row[x + 3]) / 256;
+			fg_r = ntohs(row[x + 0]) / 257;
+			fg_g = ntohs(row[x + 1]) / 257;
+			fg_b = ntohs(row[x + 2]) / 257;
+			opac = ntohs(row[x + 3]) / 257;
 			/* blend opaque part of image data with window background color to
 			 * emulate transparency */
-			img->buf[off++] = (fg_r * opac + bg_r * (255 - opac)) / 256;
-			img->buf[off++] = (fg_g * opac + bg_g * (255 - opac)) / 256;
-			img->buf[off++] = (fg_b * opac + bg_b * (255 - opac)) / 256;
+			img->buf[off++] = (fg_r * opac + bg_r * (255 - opac)) / 255;
+			img->buf[off++] = (fg_g * opac + bg_g * (255 - opac)) / 255;
+			img->buf[off++] = (fg_b * opac + bg_b * (255 - opac)) / 255;
 		}
 	}
 

@@ -54,4 +54,4 @@ Development
 sent is developed at http://tools.suckless.org/sent
 
 
-0: http://git.2f30.org/farbfeld/about/
+0: http://tools.suckless.org/farbfeld/

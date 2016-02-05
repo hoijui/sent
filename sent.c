@@ -159,7 +159,8 @@ filter(int fd, const char *cmd)
 	return fds[0];
 }
 
-Image *ffopen(char *filename)
+Image *
+ffopen(char *filename)
 {
 	unsigned char hdr[16];
 	char *bin = NULL;
@@ -206,7 +207,8 @@ Image *ffopen(char *filename)
 	return img;
 }
 
-void fffree(Image *img)
+void
+fffree(Image *img)
 {
 	free(img->buf);
 	if (img->ximg)
@@ -214,7 +216,8 @@ void fffree(Image *img)
 	free(img);
 }
 
-int ffread(Image *img)
+int
+ffread(Image *img)
 {
 	uint32_t y, x;
 	uint16_t *row;
@@ -277,7 +280,8 @@ int ffread(Image *img)
 	return 1;
 }
 
-int ffprepare(Image *img)
+int
+ffprepare(Image *img)
 {
 	int depth = DefaultDepth(xw.dpy, xw.scr);
 	int width = xw.uw;
@@ -319,7 +323,8 @@ int ffprepare(Image *img)
 	return 1;
 }
 
-void ffscale(Image *img)
+void
+ffscale(Image *img)
 {
 	unsigned int x, y;
 	unsigned int width = img->ximg->width;
@@ -344,7 +349,8 @@ void ffscale(Image *img)
 	}
 }
 
-void ffdraw(Image *img)
+void
+ffdraw(Image *img)
 {
 	int xoffset = (xw.w - img->ximg->width) / 2;
 	int yoffset = (xw.h - img->ximg->height) / 2;
@@ -354,7 +360,8 @@ void ffdraw(Image *img)
 	img->state |= DRAWN;
 }
 
-void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
+void
+getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 {
 	int i, j;
 	unsigned int curw, newmax;
@@ -383,7 +390,8 @@ void getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 	*width += fonts[j]->h;
 }
 
-void cleanup()
+void
+cleanup()
 {
 	unsigned int i, j;
 
@@ -408,7 +416,8 @@ void cleanup()
 	}
 }
 
-void die(const char *fmt, ...)
+void
+die(const char *fmt, ...)
 {
 	va_list ap;
 
@@ -419,7 +428,8 @@ void die(const char *fmt, ...)
 	exit(1);
 }
 
-void eprintf(const char *fmt, ...)
+void
+eprintf(const char *fmt, ...)
 {
 	va_list ap;
 
@@ -437,7 +447,8 @@ void eprintf(const char *fmt, ...)
 	}
 }
 
-void load(FILE *fp)
+void
+load(FILE *fp)
 {
 	static size_t size = 0;
 	size_t blen, maxlines;
@@ -493,7 +504,8 @@ void load(FILE *fp)
 	}
 }
 
-void advance(const Arg *arg)
+void
+advance(const Arg *arg)
 {
 	int new_idx = idx + arg->i;
 	LIMIT(new_idx, 0, slidecount-1);
@@ -509,12 +521,14 @@ void advance(const Arg *arg)
 	}
 }
 
-void quit(const Arg *arg)
+void
+quit(const Arg *arg)
 {
 	running = 0;
 }
 
-void resize(int width, int height)
+void
+resize(int width, int height)
 {
 	xw.w = width;
 	xw.h = height;
@@ -523,7 +537,8 @@ void resize(int width, int height)
 	drw_resize(d, width, height);
 }
 
-void run()
+void
+run()
 {
 	XEvent ev;
 
@@ -544,13 +559,15 @@ void run()
 	}
 }
 
-void usage()
+void
+usage()
 {
 	die("sent " VERSION " (c) 2014-2015 markus.teich@stusta.mhn.de\n" \
 	"usage: sent FILE1 [FILE2 ...]", argv0);
 }
 
-void xdraw()
+void
+xdraw()
 {
 	unsigned int height, width, i;
 	Image *im = slides[idx].img;
@@ -578,7 +595,8 @@ void xdraw()
 	}
 }
 
-void xhints()
+void
+xhints()
 {
 	XClassHint class = {.res_name = "sent", .res_class = "presenter"};
 	XWMHints wm = {.flags = InputHint, .input = True};
@@ -595,7 +613,8 @@ void xhints()
 	XFree(sizeh);
 }
 
-void xinit()
+void
+xinit()
 {
 	XTextProperty prop;
 
@@ -635,7 +654,8 @@ void xinit()
 	XSync(xw.dpy, False);
 }
 
-void xloadfonts()
+void
+xloadfonts()
 {
 	int i, j;
 	char *fstrs[LEN(fontfallbacks)];
@@ -659,7 +679,8 @@ void xloadfonts()
 			free(fstrs[j]);
 }
 
-void bpress(XEvent *e)
+void
+bpress(XEvent *e)
 {
 	unsigned int i;
 
@@ -668,19 +689,22 @@ void bpress(XEvent *e)
 			mshortcuts[i].func(&(mshortcuts[i].arg));
 }
 
-void cmessage(XEvent *e)
+void
+cmessage(XEvent *e)
 {
 	if (e->xclient.data.l[0] == xw.wmdeletewin)
 		running = 0;
 }
 
-void expose(XEvent *e)
+void
+expose(XEvent *e)
 {
 	if (0 == e->xexpose.count)
 		xdraw();
 }
 
-void kpress(XEvent *e)
+void
+kpress(XEvent *e)
 {
 	unsigned int i;
 	KeySym sym;
@@ -691,7 +715,8 @@ void kpress(XEvent *e)
 			shortcuts[i].func(&(shortcuts[i].arg));
 }
 
-void configure(XEvent *e)
+void
+configure(XEvent *e)
 {
 	resize(e->xconfigure.width, e->xconfigure.height);
 	if (slides[idx].img)
@@ -699,7 +724,8 @@ void configure(XEvent *e)
 	xdraw();
 }
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
 	int i;
 	FILE *fp = NULL;

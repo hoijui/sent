@@ -89,14 +89,13 @@ typedef struct {
 
 static Image *ffopen(char *filename);
 static void fffree(Image *img);
-static int ffread(Image *img);
-static int ffprepare(Image *img);
+static void ffread(Image *img);
+static void ffprepare(Image *img);
 static void ffscale(Image *img);
 static void ffdraw(Image *img);
 
 static void getfontsize(Slide *s, unsigned int *width, unsigned int *height);
 static void cleanup();
-static void eprintf(const char *, ...);
 static void die(const char *, ...);
 static void load(FILE *fp);
 static void advance(const Arg *arg);
@@ -142,11 +141,11 @@ filter(int fd, const char *cmd)
 	int fds[2];
 
 	if (pipe(fds) < 0)
-		eprintf("pipe:");
+		die("Unable to create pipe:");
 
 	switch (fork()) {
 	case -1:
-		eprintf("fork:");
+		die("Unable to fork:");
 	case 0:
 		dup2(fd, 0);
 		dup2(fds[1], 1);
@@ -183,14 +182,13 @@ ffopen(char *filename)
 		return NULL;
 
 	if ((fd = open(filename, O_RDONLY)) < 0) {
-		eprintf("Unable to open file %s:", filename);
-		return NULL;
+		die("Unable to open file %s:", filename);
 	}
 
 	tmpfd = fd;
 	fd = filter(fd, bin);
 	if (fd < 0)
-		eprintf("Unable to filter %s:", filename);
+		die("Unable to filter %s:", filename);
 	close(tmpfd);
 
 	if (read(fd, hdr, 16) != 16)
@@ -216,7 +214,7 @@ fffree(Image *img)
 	free(img);
 }
 
-int
+void
 ffread(Image *img)
 {
 	uint32_t y, x;
@@ -226,25 +224,20 @@ ffread(Image *img)
 	size_t rowlen, off, nbytes;
 	ssize_t count;
 
-	if (!img)
-		return 0;
-
 	if (img->state & LOADED)
-		return 2;
+		return;
 
 	if (img->buf)
 		free(img->buf);
 	/* internally the image is stored in 888 format */
 	if (!(img->buf = malloc(3 * img->bufwidth * img->bufheight)))
-		return 0;
+		die("Unable to malloc buffer for image.");
 
 	/* scratch buffer to read row by row */
 	rowlen = img->bufwidth * 2 * strlen("RGBA");
 	row = malloc(rowlen);
 	if (!row) {
-		free(img->buf);
-		img->buf = NULL;
-		return 0;
+		die("Unable to malloc buffer for image row.");
 	}
 
 	/* extract window background color channels for transparency */
@@ -257,7 +250,7 @@ ffread(Image *img)
 		while (nbytes < rowlen) {
 			count = read(img->fd, (char *)row + nbytes, rowlen - nbytes);
 			if (count < 0)
-				eprintf("Unable to read from pipe:");
+				die("Unable to read from pipe:");
 			nbytes += count;
 		}
 		for (x = 0; x < rowlen / 2; x += 4) {
@@ -276,11 +269,9 @@ ffread(Image *img)
 	free(row);
 	close(img->fd);
 	img->state |= LOADED;
-
-	return 1;
 }
 
-int
+void
 ffprepare(Image *img)
 {
 	int depth = DefaultDepth(xw.dpy, xw.scr);
@@ -292,35 +283,21 @@ ffprepare(Image *img)
 	else
 		height = img->bufheight * xw.uw / img->bufwidth;
 
-	if (depth < 24) {
-		eprintf("Display depths <24 not supported.");
-		return 0;
-	}
+	if (depth < 24)
+		die("Display depths <24 not supported.");
 
 	if (!(img->ximg = XCreateImage(xw.dpy, CopyFromParent, depth, ZPixmap, 0,
-				NULL, width, height, 32, 0))) {
-		eprintf("Unable to create XImage.");
-		return 0;
-	}
+	                               NULL, width, height, 32, 0)))
+		die("Unable to create XImage.");
 
-	if (!(img->ximg->data = malloc(img->ximg->bytes_per_line * height))) {
-		eprintf("Unable to alloc data section for XImage.");
-		XDestroyImage(img->ximg);
-		img->ximg = NULL;
-		return 0;
-	}
+	if (!(img->ximg->data = malloc(img->ximg->bytes_per_line * height)))
+		die("Unable to alloc data section for XImage.");
 
-	if (!XInitImage(img->ximg)) {
-		eprintf("Unable to init XImage.");
-		free(img->ximg->data);
-		XDestroyImage(img->ximg);
-		img->ximg = NULL;
-		return 0;
-	}
+	if (!XInitImage(img->ximg))
+		die("Unable to init XImage.");
 
 	ffscale(img);
 	img->state |= SCALED;
-	return 1;
 }
 
 void
@@ -421,18 +398,6 @@ die(const char *fmt, ...)
 {
 	va_list ap;
 
-	va_start(ap, fmt);
-	eprintf(fmt, ap);
-	va_end(ap);
-
-	exit(1);
-}
-
-void
-eprintf(const char *fmt, ...)
-{
-	va_list ap;
-
 	fputs("sent: ", stderr);
 
 	va_start(ap, fmt);
@@ -445,6 +410,8 @@ eprintf(const char *fmt, ...)
 	} else {
 		fputc('\n', stderr);
 	}
+
+	exit(1);
 }
 
 void
@@ -514,10 +481,10 @@ advance(const Arg *arg)
 			slides[idx].img->state &= ~(DRAWN | SCALED);
 		idx = new_idx;
 		xdraw();
-		if (slidecount > idx + 1 && slides[idx + 1].img && !ffread(slides[idx + 1].img))
-			die("Unable to read image %s", slides[idx + 1].lines[0]);
-		if (0 < idx && slides[idx - 1].img && !ffread(slides[idx - 1].img))
-			die("Unable to read image %s", slides[idx - 1].lines[0]);
+		if (slidecount > idx + 1 && slides[idx + 1].img)
+			ffread(slides[idx + 1].img);
+		if (0 < idx && slides[idx - 1].img)
+			ffread(slides[idx - 1].img);
 	}
 }
 
@@ -560,13 +527,6 @@ run()
 }
 
 void
-usage()
-{
-	die("sent " VERSION " (c) 2014-2015 markus.teich@stusta.mhn.de\n" \
-	"usage: sent FILE1 [FILE2 ...]", argv0);
-}
-
-void
 xdraw()
 {
 	unsigned int height, width, i;
@@ -586,12 +546,13 @@ xdraw()
 			         slides[idx].lines[i],
 			         0);
 		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
-	} else if (!(im->state & LOADED) && !ffread(im)) {
-		eprintf("Unable to read image %s", slides[idx].lines[0]);
-	} else if (!(im->state & SCALED) && !ffprepare(im)) {
-		eprintf("Unable to prepare image %s for drawing", slides[idx].lines[0]);
-	} else if (!(im->state & DRAWN)) {
-		ffdraw(im);
+	} else {
+		if (!(im->state & LOADED))
+			ffread(im);
+		if (!(im->state & SCALED))
+			ffprepare(im);
+		if (!(im->state & DRAWN))
+			ffdraw(im);
 	}
 }
 
@@ -724,6 +685,13 @@ configure(XEvent *e)
 	xdraw();
 }
 
+void
+usage()
+{
+	die("sent " VERSION " (c) 2014-2015 markus.teich@stusta.mhn.de\n" \
+	"usage: sent FILE1 [FILE2 ...]", argv0);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -741,7 +709,7 @@ main(int argc, char *argv[])
 			load(fp);
 			fclose(fp);
 		} else {
-			eprintf("Unable to open '%s' for reading:", argv[i]);
+			die("Unable to open '%s' for reading:", argv[i]);
 		}
 	}
 

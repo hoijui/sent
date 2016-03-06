@@ -25,12 +25,12 @@ You can navigate with the arrow keys and quit with `q`.
 
 Usage
 
-	sent FILE
+	sent [FILE]
 
-If FILE equals `-`, stdin will be read. Produce image slides by prepending a
-`@` in front of the filename as a single paragraph. Lines starting with `#` will
-be ignored. A `\` at the beginning of the line escapes `@` and `#`. A
-presentation file could look like this:
+If FILE is omitted or equals `-`, stdin will be read. Produce image slides by
+prepending a `@` in front of the filename as a single paragraph. Lines starting
+with `#` will be ignored. A `\` at the beginning of the line escapes `@` and
+`#`. A presentation file could look like this:
 
 	sent
 	

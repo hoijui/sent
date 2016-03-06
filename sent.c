@@ -689,7 +689,7 @@ void
 usage()
 {
 	die("sent " VERSION " (c) 2014-2015 markus.teich@stusta.mhn.de\n" \
-	"usage: sent FILE", argv0);
+	"usage: sent [FILE]", argv0);
 }
 
 int
@@ -703,12 +703,13 @@ main(int argc, char *argv[])
 		usage();
 	} ARGEND;
 
-	if ((fp = strcmp(argv[0], "-") ? fopen(argv[0], "r") : stdin)) {
-		load(fp);
-		fclose(fp);
-	} else {
+	if (!argv[0] || !strcmp(argv[0], "-"))
+		fp = stdin;
+	else if (!(fp = fopen(argv[0], "r")))
 		die("Unable to open '%s' for reading:", argv[0]);
-	}
+
+	load(fp);
+	fclose(fp);
 
 	if (!slidecount)
 		usage();

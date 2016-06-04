@@ -55,6 +55,7 @@ typedef struct {
 	unsigned int linecount;
 	char **lines;
 	Image *img;
+	char *embed;
 } Slide;
 
 /* Purely graphic info */
@@ -436,7 +437,7 @@ load(FILE *fp)
 			/* only make image slide if first line of a slide starts with @ */
 			if (s->linecount == 0 && s->lines[0][0] == '@') {
 				memmove(s->lines[0], &s->lines[0][1], blen);
-				s->img = ffopen(s->lines[0]);
+				s->embed = s->lines[0];
 			}
 
 			if (s->lines[s->linecount][0] == '\\')
@@ -447,6 +448,9 @@ load(FILE *fp)
 		if (!p)
 			break;
 	}
+
+	if (slidecount && slides[0].embed && slides[0].embed[0])
+		slides[0].img = ffopen(slides[0].embed);
 }
 
 void
@@ -458,6 +462,8 @@ advance(const Arg *arg)
 		if (slides[idx].img)
 			slides[idx].img->state &= ~(DRAWN | SCALED);
 		idx = new_idx;
+		if (!slides[idx].img && slides[idx].embed && slides[idx].embed[0])
+			slides[idx].img = ffopen(slides[idx].embed);
 		xdraw();
 		if (slidecount > idx + 1 && slides[idx + 1].img)
 			ffread(slides[idx + 1].img);

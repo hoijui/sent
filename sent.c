@@ -89,9 +89,8 @@ typedef struct {
 	const Arg arg;
 } Shortcut;
 
-static Image *ffopen(char *filename);
 static void fffree(Image *img);
-static void ffread(Image *img);
+static Image *ffread(char *filename);
 static void ffprepare(Image *img);
 static void ffscale(Image *img);
 static void ffdraw(Image *img);
@@ -159,14 +158,27 @@ filter(int fd, const char *cmd)
 	return fds[0];
 }
 
-Image *
-ffopen(char *filename)
+void
+fffree(Image *img)
 {
+	free(img->buf);
+	if (img->ximg)
+		XDestroyImage(img->ximg);
+	free(img);
+}
+
+Image *
+ffread(char *filename)
+{
+	uint32_t y, x;
+	uint16_t *row;
+	uint8_t opac, fg_r, fg_g, fg_b, bg_r, bg_g, bg_b;
+	size_t rowlen, off, nbytes, i;
+	ssize_t count;
 	unsigned char hdr[16];
 	char *bin = NULL;
 	regex_t regex;
 	Image *img;
-	size_t i;
 	int tmpfd, fd;
 
 	for (i = 0; i < LEN(filters); i++) {
@@ -178,13 +190,11 @@ ffopen(char *filename)
 			break;
 		}
 	}
-
 	if (!bin)
 		return NULL;
 
-	if ((fd = open(filename, O_RDONLY)) < 0) {
+	if ((fd = open(filename, O_RDONLY)) < 0)
 		die("sent: Unable to open file %s:", filename);
-	}
 
 	tmpfd = fd;
 	fd = filter(fd, bin);
@@ -192,41 +202,13 @@ ffopen(char *filename)
 		die("sent: Unable to filter %s:", filename);
 	close(tmpfd);
 
-	if (read(fd, hdr, 16) != 16)
-		return NULL;
-
-	if (memcmp("farbfeld", hdr, 8))
+	if (read(fd, hdr, 16) != 16 || memcmp("farbfeld", hdr, 8))
 		return NULL;
 
 	img = calloc(1, sizeof(Image));
 	img->fd = fd;
 	img->bufwidth = ntohl(*(uint32_t *)&hdr[8]);
 	img->bufheight = ntohl(*(uint32_t *)&hdr[12]);
-
-	return img;
-}
-
-void
-fffree(Image *img)
-{
-	free(img->buf);
-	if (img->ximg)
-		XDestroyImage(img->ximg);
-	free(img);
-}
-
-void
-ffread(Image *img)
-{
-	uint32_t y, x;
-	uint16_t *row;
-	uint8_t opac;
-	uint8_t fg_r, fg_g, fg_b, bg_r, bg_g, bg_b;
-	size_t rowlen, off, nbytes;
-	ssize_t count;
-
-	if (img->state & LOADED)
-		return;
 
 	if (img->buf)
 		free(img->buf);
@@ -237,9 +219,8 @@ ffread(Image *img)
 	/* scratch buffer to read row by row */
 	rowlen = img->bufwidth * 2 * strlen("RGBA");
 	row = malloc(rowlen);
-	if (!row) {
+	if (!row)
 		die("sent: Unable to malloc buffer for image row.\n");
-	}
 
 	/* extract window background color channels for transparency */
 	bg_r = (sc[ColBg].pixel >> 16) % 256;
@@ -270,6 +251,8 @@ ffread(Image *img)
 	free(row);
 	close(img->fd);
 	img->state |= LOADED;
+
+	return img;
 }
 
 void
@@ -444,13 +427,11 @@ load(FILE *fp)
 				memmove(s->lines[s->linecount], &s->lines[s->linecount][1], blen);
 			s->linecount++;
 		} while ((p = fgets(buf, sizeof(buf), fp)) && strcmp(buf, "\n") != 0);
+
 		slidecount++;
 		if (!p)
 			break;
 	}
-
-	if (slidecount && slides[0].embed && slides[0].embed[0])
-		slides[0].img = ffopen(slides[0].embed);
 }
 
 void
@@ -462,13 +443,7 @@ advance(const Arg *arg)
 		if (slides[idx].img)
 			slides[idx].img->state &= ~(DRAWN | SCALED);
 		idx = new_idx;
-		if (!slides[idx].img && slides[idx].embed && slides[idx].embed[0])
-			slides[idx].img = ffopen(slides[idx].embed);
 		xdraw();
-		if (slidecount > idx + 1 && slides[idx + 1].img)
-			ffread(slides[idx + 1].img);
-		if (0 < idx && slides[idx - 1].img)
-			ffread(slides[idx - 1].img);
 	}
 }
 
@@ -514,7 +489,11 @@ void
 xdraw()
 {
 	unsigned int height, width, i;
-	Image *im = slides[idx].img;
+	Image *im;
+
+	if (!slides[idx].img && slides[idx].embed && slides[idx].embed[0])
+		slides[idx].img = ffread(slides[idx].embed);
+	im = slides[idx].img;
 
 	getfontsize(&slides[idx], &width, &height);
 	XClearWindow(xw.dpy, xw.win);
@@ -532,8 +511,6 @@ xdraw()
 			         0);
 		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
 	} else {
-		if (!(im->state & LOADED))
-			ffread(im);
 		if (!(im->state & SCALED))
 			ffprepare(im);
 		if (!(im->state & DRAWN))

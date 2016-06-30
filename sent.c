@@ -32,9 +32,8 @@ char *argv0;
 
 typedef enum {
 	NONE = 0,
-	LOADED = 1,
-	SCALED = 2,
-	DRAWN = 4
+	SCALED = 1,
+	DRAWN = 2
 } imgstate;
 
 typedef struct {
@@ -42,7 +41,6 @@ typedef struct {
 	unsigned int bufwidth, bufheight;
 	imgstate state;
 	XImage *ximg;
-	int fd;
 	int numpasses;
 } Image;
 
@@ -90,7 +88,7 @@ typedef struct {
 } Shortcut;
 
 static void fffree(Image *img);
-static Image *ffread(char *filename);
+static void ffload(Slide *s);
 static void ffprepare(Image *img);
 static void ffscale(Image *img);
 static void ffdraw(Image *img);
@@ -167,8 +165,8 @@ fffree(Image *img)
 	free(img);
 }
 
-Image *
-ffread(char *filename)
+void
+ffload(Slide *s)
 {
 	uint32_t y, x;
 	uint16_t *row;
@@ -177,9 +175,12 @@ ffread(char *filename)
 	ssize_t count;
 	unsigned char hdr[16];
 	char *bin = NULL;
+	char *filename;
 	regex_t regex;
-	Image *img;
-	int tmpfd, fd;
+	int fdin, fdout;
+
+	if (s->img || !(filename = s->embed) || !s->embed[0])
+		return; /* already done */
 
 	for (i = 0; i < LEN(filters); i++) {
 		if (regcomp(&regex, filters[i].regex,
@@ -191,33 +192,30 @@ ffread(char *filename)
 		}
 	}
 	if (!bin)
-		return NULL;
+		die("sent: Unable to find matching filter for file %s", filename);
 
-	if ((fd = open(filename, O_RDONLY)) < 0)
+	if ((fdin = open(filename, O_RDONLY)) < 0)
 		die("sent: Unable to open file %s:", filename);
 
-	tmpfd = fd;
-	fd = filter(fd, bin);
-	if (fd < 0)
+	if ((fdout = filter(fdin, bin)) < 0)
 		die("sent: Unable to filter %s:", filename);
-	close(tmpfd);
+	close(fdin);
 
-	if (read(fd, hdr, 16) != 16 || memcmp("farbfeld", hdr, 8))
-		return NULL;
+	if (read(fdout, hdr, 16) != 16 || memcmp("farbfeld", hdr, 8))
+		die("sent: Unable to filter %s into a valid farbfeld file", filename);
 
-	img = calloc(1, sizeof(Image));
-	img->fd = fd;
-	img->bufwidth = ntohl(*(uint32_t *)&hdr[8]);
-	img->bufheight = ntohl(*(uint32_t *)&hdr[12]);
+	s->img = calloc(1, sizeof(Image));
+	s->img->bufwidth = ntohl(*(uint32_t *)&hdr[8]);
+	s->img->bufheight = ntohl(*(uint32_t *)&hdr[12]);
 
-	if (img->buf)
-		free(img->buf);
+	if (s->img->buf)
+		free(s->img->buf);
 	/* internally the image is stored in 888 format */
-	if (!(img->buf = malloc(3 * img->bufwidth * img->bufheight)))
+	if (!(s->img->buf = malloc(3 * s->img->bufwidth * s->img->bufheight)))
 		die("sent: Unable to malloc buffer for image.\n");
 
 	/* scratch buffer to read row by row */
-	rowlen = img->bufwidth * 2 * strlen("RGBA");
+	rowlen = s->img->bufwidth * 2 * strlen("RGBA");
 	row = malloc(rowlen);
 	if (!row)
 		die("sent: Unable to malloc buffer for image row.\n");
@@ -227,10 +225,10 @@ ffread(char *filename)
 	bg_g = (sc[ColBg].pixel >>  8) % 256;
 	bg_b = (sc[ColBg].pixel >>  0) % 256;
 
-	for (off = 0, y = 0; y < img->bufheight; y++) {
+	for (off = 0, y = 0; y < s->img->bufheight; y++) {
 		nbytes = 0;
 		while (nbytes < rowlen) {
-			count = read(img->fd, (char *)row + nbytes, rowlen - nbytes);
+			count = read(fdout, (char *)row + nbytes, rowlen - nbytes);
 			if (count < 0)
 				die("sent: Unable to read from pipe:");
 			nbytes += count;
@@ -242,17 +240,14 @@ ffread(char *filename)
 			opac = ntohs(row[x + 3]) / 257;
 			/* blend opaque part of image data with window background color to
 			 * emulate transparency */
-			img->buf[off++] = (fg_r * opac + bg_r * (255 - opac)) / 255;
-			img->buf[off++] = (fg_g * opac + bg_g * (255 - opac)) / 255;
-			img->buf[off++] = (fg_b * opac + bg_b * (255 - opac)) / 255;
+			s->img->buf[off++] = (fg_r * opac + bg_r * (255 - opac)) / 255;
+			s->img->buf[off++] = (fg_g * opac + bg_g * (255 - opac)) / 255;
+			s->img->buf[off++] = (fg_b * opac + bg_b * (255 - opac)) / 255;
 		}
 	}
 
 	free(row);
-	close(img->fd);
-	img->state |= LOADED;
-
-	return img;
+	close(fdout);
 }
 
 void
@@ -417,11 +412,9 @@ load(FILE *fp)
 			if (s->lines[s->linecount][blen-1] == '\n')
 				s->lines[s->linecount][blen-1] = '\0';
 
-			/* only make image slide if first line of a slide starts with @ */
-			if (s->linecount == 0 && s->lines[0][0] == '@') {
-				memmove(s->lines[0], &s->lines[0][1], blen);
-				s->embed = s->lines[0];
-			}
+			/* mark as image slide if first line of a slide starts with @ */
+			if (s->linecount == 0 && s->lines[0][0] == '@')
+				s->embed = &s->lines[0][1];
 
 			if (s->lines[s->linecount][0] == '\\')
 				memmove(s->lines[s->linecount], &s->lines[s->linecount][1], blen);
@@ -444,6 +437,10 @@ advance(const Arg *arg)
 			slides[idx].img->state &= ~(DRAWN | SCALED);
 		idx = new_idx;
 		xdraw();
+		if (slidecount > idx + 1)
+			ffload(&slides[idx + 1]);
+		if (0 < idx)
+			ffload(&slides[idx - 1]);
 	}
 }
 
@@ -489,11 +486,7 @@ void
 xdraw()
 {
 	unsigned int height, width, i;
-	Image *im;
-
-	if (!slides[idx].img && slides[idx].embed && slides[idx].embed[0])
-		slides[idx].img = ffread(slides[idx].embed);
-	im = slides[idx].img;
+	Image *im = slides[idx].img;
 
 	getfontsize(&slides[idx], &width, &height);
 	XClearWindow(xw.dpy, xw.win);
@@ -567,6 +560,7 @@ xinit()
 	XSetWindowBackground(xw.dpy, xw.win, sc[ColBg].pixel);
 
 	xloadfonts();
+	ffload(&slides[0]);
 
 	XStringListToTextProperty(&argv0, 1, &prop);
 	XSetWMName(xw.dpy, xw.win, &prop);

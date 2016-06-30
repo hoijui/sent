@@ -436,6 +436,7 @@ advance(const Arg *arg)
 		if (slides[idx].img)
 			slides[idx].img->state &= ~(DRAWN | SCALED);
 		idx = new_idx;
+		ffload(&slides[idx]);
 		xdraw();
 		if (slidecount > idx + 1)
 			ffload(&slides[idx + 1]);

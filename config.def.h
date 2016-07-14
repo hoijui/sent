@@ -49,5 +49,7 @@ static Shortcut shortcuts[] = {
 };
 
 static Filter filters[] = {
-	{ "\\.(png|jpg|gif)$", "2ff" },
+	{ "\\.ff$", "cat" },
+	{ "\\.ff.bz2$", "bunzip2" },
+	{ "\\.[a-z0-9]+$", "2ff" },
 };

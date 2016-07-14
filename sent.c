@@ -1,4 +1,4 @@
-/* See LICENSE for licence details. */
+/* See LICENSE file for copyright and license details. */
 #include <sys/types.h>
 #include <arpa/inet.h>
 

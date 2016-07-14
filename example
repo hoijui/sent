@@ -20,6 +20,7 @@ easy to use
 
 depends on
 ♽ Xlib
+☢ Xft
 ☃ farbfeld
 
 ~1000 lines of code
@@ -29,7 +30,7 @@ $ sent FILE1 [FILE2 …]
 
 ▸ one slide per paragraph
 ▸ lines starting with # are ignored
-▸ image slide: paragraph containing @FILE.png
+▸ image slide: paragraph containing @FILENAME
 ▸ empty slide: just use a \ as a paragraph
 
 # This is a comment and will not be part of the presentation
@@ -49,10 +50,20 @@ $ sent FILE1 [FILE2 …]
 \#This line as well
 ⇒ Prepend a backslash to kill behaviour of special characters
 
+Images are handled in the
+http://tools.suckless.org/farbfeld/
+format internally.
+
+sent also supports transparent images.
+Try changing the background in config.h
+and rebuild.
+
+@transparent_test.ff
+
 😀😁😂😃😄😅😆😇😈😉😊😋😌😍😎😏
 😐😑😒😓😔😕😖😗😘😙😚😛😜😝😞😟
 😠😡😢😣😥😦😧😨😩😪😫😭😮😯😰😱
 😲😳😴😵😶😷😸😹😺😻😼😽😾😿🙀☠
 
-thanks
+thanks.
 questions?

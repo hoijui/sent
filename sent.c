@@ -645,8 +645,7 @@ configure(XEvent *e)
 void
 usage()
 {
-	die("sent " VERSION " (c) 2014-2015 markus.teich@stusta.mhn.de\n" \
-	"usage: sent [FILE]\n", argv0);
+	die("usage: %s [file]\n", argv0);
 }
 
 int
@@ -656,6 +655,8 @@ main(int argc, char *argv[])
 
 	ARGBEGIN {
 	case 'v':
+		fprintf(stderr, "sent-"VERSION"\n");
+		return 0;
 	default:
 		usage();
 	} ARGEND;

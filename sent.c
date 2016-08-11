@@ -664,7 +664,7 @@ main(int argc, char *argv[])
 		return 0;
 	default:
 		usage();
-	} ARGEND;
+	} ARGEND
 
 	if (!argv[0] || !strcmp(argv[0], "-"))
 		fp = stdin;

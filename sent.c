@@ -185,12 +185,16 @@ ffload(Slide *s)
 
 	for (i = 0; i < LEN(filters); i++) {
 		if (regcomp(&regex, filters[i].regex,
-		            REG_NOSUB | REG_EXTENDED | REG_ICASE))
+		            REG_NOSUB | REG_EXTENDED | REG_ICASE)) {
+			fprintf(stderr, "sent: Invalid regex '%s'\n", filters[i].regex);
 			continue;
+		}
 		if (!regexec(&regex, filename, 0, NULL, 0)) {
 			bin = filters[i].bin;
+			regfree(&regex);
 			break;
 		}
+		regfree(&regex);
 	}
 	if (!bin)
 		die("sent: Unable to find matching filter for file %s", filename);

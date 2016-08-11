@@ -150,7 +150,8 @@ filter(int fd, const char *cmd)
 		close(fds[0]);
 		close(fds[1]);
 		execlp("sh", "sh", "-c", cmd, (char *)0);
-		die("sent: execlp sh -c '%s':", cmd);
+		fprintf(stderr, "sent: execlp sh -c '%s': %s\n", cmd, strerror(errno));
+		_exit(1);
 	}
 	close(fds[1]);
 	return fds[0];

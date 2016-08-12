@@ -48,6 +48,10 @@ install: all
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
 	@cp -f sent ${DESTDIR}${PREFIX}/bin
 	@chmod 755 ${DESTDIR}${PREFIX}/bin/sent
+	@echo installing manual page to ${DESTDIR}${MANPREFIX}/man1
+	@mkdir -p ${DESTDIR}${MANPREFIX}/man1
+	@cp sent.1 ${DESTDIR}${MANPREFIX}/man1/sent.1
+	@chmod 644 ${DESTDIR}${MANPREFIX}/man1/sent.1
 
 uninstall:
 	@echo removing executable file from ${DESTDIR}${PREFIX}/bin

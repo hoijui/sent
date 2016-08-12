@@ -206,8 +206,10 @@ ffload(Slide *s)
 		die("sent: Unable to filter '%s':", filename);
 	close(fdin);
 
-	if (read(fdout, hdr, 16) != 16 || memcmp("farbfeld", hdr, 8))
-		die("sent: Unable to filter '%s' into a valid farbfeld file", filename);
+	if (read(fdout, hdr, 16) != 16)
+		die("sent: Unable to read filtered file '%s':", filename);
+	if (memcmp("farbfeld", hdr, 8))
+		die("sent: Filtered file '%s' has no valid farbfeld header", filename);
 
 	s->img = calloc(1, sizeof(Image));
 	s->img->bufwidth = ntohl(*(uint32_t *)&hdr[8]);
@@ -217,13 +219,13 @@ ffload(Slide *s)
 		free(s->img->buf);
 	/* internally the image is stored in 888 format */
 	if (!(s->img->buf = malloc(3 * s->img->bufwidth * s->img->bufheight)))
-		die("sent: Unable to allocate buffer for image");
+		die("sent: Unable to allocate buffer for image:");
 
 	/* scratch buffer to read row by row */
 	rowlen = s->img->bufwidth * 2 * strlen("RGBA");
 	row = malloc(rowlen);
 	if (!row)
-		die("sent: Unable to allocate buffer for image row");
+		die("sent: Unable to allocate buffer for image row:");
 
 	/* extract window background color channels for transparency */
 	bg_r = (sc[ColBg].pixel >> 16) % 256;
@@ -268,7 +270,7 @@ ffprepare(Image *img)
 		height = img->bufheight * xw.uw / img->bufwidth;
 
 	if (depth < 24)
-		die("sent: Display color depths <24 not supported");
+		die("sent: Display color depths < 24 not supported");
 
 	if (!(img->ximg = XCreateImage(xw.dpy, CopyFromParent, depth, ZPixmap, 0,
 	                               NULL, width, height, 32, 0)))
@@ -585,7 +587,7 @@ xloadfonts()
 
 	for (j = 0; j < LEN(fontfallbacks); j++) {
 		if (!(fstrs[j] = malloc(MAXFONTSTRLEN)))
-			die("sent: Unable to allocate fontstring");
+			die("sent: Unable to allocate fontstring:");
 	}
 
 	for (i = 0; i < NUMFONTSCALES; i++) {

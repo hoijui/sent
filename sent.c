@@ -210,7 +210,7 @@ ffload(Slide *s)
 	if (memcmp("farbfeld", hdr, 8))
 		die("sent: Filtered file '%s' has no valid farbfeld header", filename);
 
-	s->img = calloc(1, sizeof(Image));
+	s->img = ecalloc(1, sizeof(Image));
 	s->img->bufwidth = ntohl(*(uint32_t *)&hdr[8]);
 	s->img->bufheight = ntohl(*(uint32_t *)&hdr[12]);
 

@@ -33,7 +33,6 @@ char *argv0;
 typedef enum {
 	NONE = 0,
 	SCALED = 1,
-	DRAWN = 2
 } imgstate;
 
 typedef struct {
@@ -320,7 +319,6 @@ ffdraw(Image *img)
 	XPutImage(xw.dpy, xw.win, d->gc, img->ximg, 0, 0,
 	          xoffset, yoffset, img->ximg->width, img->ximg->height);
 	XFlush(xw.dpy);
-	img->state |= DRAWN;
 }
 
 void
@@ -441,7 +439,7 @@ advance(const Arg *arg)
 	LIMIT(new_idx, 0, slidecount-1);
 	if (new_idx != idx) {
 		if (slides[idx].img)
-			slides[idx].img->state &= ~(DRAWN | SCALED);
+			slides[idx].img->state &= ~SCALED;
 		idx = new_idx;
 		ffload(&slides[idx]);
 		xdraw();
@@ -514,8 +512,7 @@ xdraw()
 	} else {
 		if (!(im->state & SCALED))
 			ffprepare(im);
-		if (!(im->state & DRAWN))
-			ffdraw(im);
+		ffdraw(im);
 	}
 }
 
@@ -645,7 +642,7 @@ configure(XEvent *e)
 {
 	resize(e->xconfigure.width, e->xconfigure.height);
 	if (slides[idx].img)
-		slides[idx].img->state &= ~(DRAWN | SCALED);
+		slides[idx].img->state &= ~SCALED;
 	xdraw();
 }
 

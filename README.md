@@ -11,8 +11,8 @@ worry about alignment. Instead you can really concentrate on the content.
 
 Dependencies
 
-You need Xlib to build sent and the farbfeld[0] tools installed to use images in
-your presentations.
+You need Xlib and Xft to build sent and the farbfeld[0] tools installed to use
+images in your presentations.
 
 Demo
 
@@ -38,6 +38,8 @@ with `#` will be ignored. A `\` at the beginning of the line escapes `@` and
 	
 	depends on
 	- Xlib
+	- Xft
+	- farbfeld
 	
 	sent FILENAME
 	one slide per paragraph

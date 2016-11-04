@@ -217,14 +217,11 @@ ffload(Slide *s)
 	if (s->img->buf)
 		free(s->img->buf);
 	/* internally the image is stored in 888 format */
-	if (!(s->img->buf = malloc(3 * s->img->bufwidth * s->img->bufheight)))
-		die("sent: Unable to allocate buffer for image:");
+	s->img->buf = ecalloc(s->img->bufwidth * s->img->bufheight, strlen("888"));
 
 	/* scratch buffer to read row by row */
 	rowlen = s->img->bufwidth * 2 * strlen("RGBA");
-	row = malloc(rowlen);
-	if (!row)
-		die("sent: Unable to allocate buffer for image row:");
+	row = ecalloc(1, rowlen);
 
 	/* extract window background color channels for transparency */
 	bg_r = (sc[ColBg].pixel >> 16) % 256;
@@ -275,9 +272,7 @@ ffprepare(Image *img)
 	                               NULL, width, height, 32, 0)))
 		die("sent: Unable to create XImage");
 
-	if (!(img->ximg->data = malloc(img->ximg->bytes_per_line * height)))
-		die("sent: Unable to allocate data section for XImage");
-
+	img->ximg->data = ecalloc(height, img->ximg->bytes_per_line);
 	if (!XInitImage(img->ximg))
 		die("sent: Unable to initiate XImage");
 
@@ -583,8 +578,7 @@ xloadfonts()
 	char *fstrs[LEN(fontfallbacks)];
 
 	for (j = 0; j < LEN(fontfallbacks); j++) {
-		if (!(fstrs[j] = malloc(MAXFONTSTRLEN)))
-			die("sent: Unable to allocate fontstring:");
+		fstrs[j] = ecalloc(1, MAXFONTSTRLEN);
 	}
 
 	for (i = 0; i < NUMFONTSCALES; i++) {

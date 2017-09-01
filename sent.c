@@ -436,12 +436,7 @@ advance(const Arg *arg)
 		if (slides[idx].img)
 			slides[idx].img->state &= ~SCALED;
 		idx = new_idx;
-		ffload(&slides[idx]);
 		xdraw();
-		if (slidecount > idx + 1)
-			ffload(&slides[idx + 1]);
-		if (0 < idx)
-			ffload(&slides[idx - 1]);
 	}
 }
 
@@ -533,6 +528,7 @@ void
 xinit()
 {
 	XTextProperty prop;
+	unsigned int i;
 
 	if (!(xw.dpy = XOpenDisplay(NULL)))
 		die("sent: Unable to open display");
@@ -560,7 +556,8 @@ xinit()
 	XSetWindowBackground(xw.dpy, xw.win, sc[ColBg].pixel);
 
 	xloadfonts();
-	ffload(&slides[0]);
+	for (i = 0; i < slidecount; i++)
+		ffload(&slides[i]);
 
 	XStringListToTextProperty(&argv0, 1, &prop);
 	XSetWMName(xw.dpy, xw.win, &prop);

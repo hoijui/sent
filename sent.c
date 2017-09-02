@@ -93,7 +93,8 @@ static void ffscale(Image *img);
 static void ffdraw(Image *img);
 
 static void getfontsize(Slide *s, unsigned int *width, unsigned int *height);
-static void cleanup();
+static void cleanup(int slidesonly);
+static void reload(const Arg *arg);
 static void load(FILE *fp);
 static void advance(const Arg *arg);
 static void quit(const Arg *arg);
@@ -115,6 +116,7 @@ static void configure(XEvent *);
 #include "config.h"
 
 /* Globals */
+static const char *fname = NULL;
 static Slide *slides = NULL;
 static int idx = 0;
 static int slidecount = 0;
@@ -346,18 +348,21 @@ getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 }
 
 void
-cleanup()
+cleanup(int slidesonly)
 {
 	unsigned int i, j;
 
-	for (i = 0; i < NUMFONTSCALES; i++)
-		drw_fontset_free(fonts[i]);
-	free(sc);
-	drw_free(d);
+	if (!slidesonly) {
+		for (i = 0; i < NUMFONTSCALES; i++)
+			drw_fontset_free(fonts[i]);
+		free(sc);
+		drw_free(d);
 
-	XDestroyWindow(xw.dpy, xw.win);
-	XSync(xw.dpy, False);
-	XCloseDisplay(xw.dpy);
+		XDestroyWindow(xw.dpy, xw.win);
+		XSync(xw.dpy, False);
+		XCloseDisplay(xw.dpy);
+	}
+
 	if (slides) {
 		for (i = 0; i < slidecount; i++) {
 			for (j = 0; j < slides[i].linecount; j++)
@@ -366,9 +371,36 @@ cleanup()
 			if (slides[i].img)
 				fffree(slides[i].img);
 		}
-		free(slides);
-		slides = NULL;
+		if (!slidesonly) {
+			free(slides);
+			slides = NULL;
+		}
 	}
+}
+
+void
+reload(const Arg *arg)
+{
+	FILE *fp = NULL;
+	unsigned int i;
+
+	if (!fname) {
+		fprintf(stderr, "sent: Cannot reload from stdin. Use a file!\n");
+		return;
+	}
+
+	cleanup(1);
+	slidecount = 0;
+
+	if (!(fp = fopen(fname, "r")))
+		die("sent: Unable to open '%s' for reading:", fname);
+	load(fp);
+	fclose(fp);
+
+	LIMIT(idx, 0, slidecount-1);
+	for (i = 0; i < slidecount; i++)
+		ffload(&slides[i]);
+	xdraw();
 }
 
 void
@@ -658,9 +690,8 @@ main(int argc, char *argv[])
 
 	if (!argv[0] || !strcmp(argv[0], "-"))
 		fp = stdin;
-	else if (!(fp = fopen(argv[0], "r")))
-		die("sent: Unable to open '%s' for reading:", argv[0]);
-
+	else if (!(fp = fopen(fname = argv[0], "r")))
+		die("sent: Unable to open '%s' for reading:", fname);
 	load(fp);
 	fclose(fp);
 
@@ -670,6 +701,6 @@ main(int argc, char *argv[])
 	xinit();
 	run();
 
-	cleanup();
+	cleanup(0);
 	return 0;
 }

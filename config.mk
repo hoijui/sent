@@ -1,5 +1,5 @@
 # sent version
-VERSION = 0.2
+VERSION = 1
 
 # Customize below to fit your system
 

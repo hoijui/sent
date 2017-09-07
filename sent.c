@@ -457,6 +457,9 @@ load(FILE *fp)
 		if (!p)
 			break;
 	}
+
+	if (!slidecount)
+		die("sent: No slides in file");
 }
 
 void
@@ -694,9 +697,6 @@ main(int argc, char *argv[])
 		die("sent: Unable to open '%s' for reading:", fname);
 	load(fp);
 	fclose(fp);
-
-	if (!slidecount)
-		usage();
 
 	xinit();
 	run();

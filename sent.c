@@ -403,6 +403,29 @@ reload(const Arg *arg)
 	xdraw();
 }
 
+/**
+ * Skips the Byte Order Mark (BOM), if present.
+ * In a text file, "UTF-8 (with BOM)" formatting is indicated
+ * by a BOM (<U+FEFF>) appearing in the beginning of the file.
+ * We check for it, by checking whether the first three characters.
+ * If no BOM is present, we rewind the file pointer
+ * to the begining of the file, otherwise not,
+ * in order to exclude the BOM from the content of the file.
+ */
+static void
+skipBom(FILE *fp)
+{
+	int c1, c2, c3;
+
+	c1 = fgetc(fp);
+	c2 = (c1 == EOF) ? EOF : fgetc(fp);
+	c3 = (c2 == EOF) ? EOF : fgetc(fp);
+	if (!(c1 == 0xEF && c2 == 0xBB && c3 == 0xBF))
+	{
+		rewind(fp);
+	}
+}
+
 void
 load(FILE *fp)
 {
@@ -410,6 +433,8 @@ load(FILE *fp)
 	size_t blen, maxlines;
 	char buf[BUFSIZ], *p;
 	Slide *s;
+
+	skipBom(fp);
 
 	/* read each line from fp and add it to the item list */
 	while (1) {

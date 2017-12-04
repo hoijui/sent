@@ -26,6 +26,8 @@ You can navigate with the arrow keys and quit with `q`.
 Usage
 
 	sent [FILE]
+	sent -h
+	sent -v
 
 If FILE is omitted or equals `-`, stdin will be read. Produce image slides by
 prepending a `@` in front of the filename as a single paragraph. Lines starting

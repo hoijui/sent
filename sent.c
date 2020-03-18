@@ -443,9 +443,14 @@ load(FILE *fp)
 		if (!p)
 			break;
 
-		if ((slidecount+1) * sizeof(*slides) >= size)
-			if (!(slides = realloc(slides, (size += BUFSIZ))))
+		if ((slidecount + 1) * sizeof(*slides) >= size) {
+			Slide* newSlides = NULL;
+			if (!(newSlides = realloc(slides, (size += BUFSIZ)))) {
 				die("sent: Unable to reallocate %u bytes:", size);
+			} else {
+				slides = newSlides;
+			}
+		}
 
 		/* read one slide */
 		unsigned maxlines = 0;

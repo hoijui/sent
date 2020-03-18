@@ -243,9 +243,8 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
 	XftDraw *d = NULL;
 	Fnt *usedfont, *curfont, *nextfont;
 	size_t i, len;
-	int utf8strlen, utf8charlen, render = x || y || w || h;
+	int utf8charlen, render = x || y || w || h;
 	long utf8codepoint = 0;
-	const char *utf8str;
 	FcCharSet *fccharset;
 	FcPattern *fcpattern;
 	FcPattern *match;
@@ -269,8 +268,8 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
 
 	usedfont = drw->fonts;
 	while (1) {
-		utf8strlen = 0;
-		utf8str = text;
+		int utf8strlen = 0;
+		const char* utf8str = text;
 		nextfont = NULL;
 		while (*text) {
 			utf8charlen = utf8decode(text, &utf8codepoint, UTF_SIZ);

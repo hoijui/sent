@@ -173,7 +173,7 @@ ffload(Slide *s)
 	uint32_t y, x;
 	uint16_t *row;
 	uint8_t opac, fg_r, fg_g, fg_b, bg_r, bg_g, bg_b;
-	size_t rowlen, off, nbytes, i;
+	size_t rowlen, off, i;
 	ssize_t count;
 	unsigned char hdr[16];
 	char *bin = NULL;
@@ -231,7 +231,7 @@ ffload(Slide *s)
 	bg_b = (sc[ColBg].pixel >>  0) % 256;
 
 	for (off = 0, y = 0; y < s->img->bufheight; y++) {
-		nbytes = 0;
+		size_t nbytes = 0;
 		while (nbytes < rowlen) {
 			count = read(fdout, (char *)row + nbytes, rowlen - nbytes);
 			if (count < 0)
@@ -322,7 +322,6 @@ void
 getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 {
 	int i, j;
-	unsigned int curw, newmax;
 	float lfac = linespacing * (s->linecount - 1) + 1;
 
 	/* fit height */
@@ -335,8 +334,8 @@ getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 	/* fit width */
 	*width = 0;
 	for (i = 0; i < s->linecount; i++) {
-		curw = drw_fontset_getwidth(d, s->lines[i]);
-		newmax = (curw >= *width);
+		unsigned int curw = drw_fontset_getwidth(d, s->lines[i]);
+		const unsigned int newmax = (curw >= *width);
 		while (j > 0 && curw > xw.uw) {
 			drw_setfontset(d, fonts[--j]);
 			curw = drw_fontset_getwidth(d, s->lines[i]);
@@ -350,10 +349,8 @@ getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 void
 cleanup(int slidesonly)
 {
-	unsigned int i, j;
-
 	if (!slidesonly) {
-		for (i = 0; i < NUMFONTSCALES; i++)
+		for (unsigned int i = 0; i < NUMFONTSCALES; i++)
 			drw_fontset_free(fonts[i]);
 		free(sc);
 		drw_free(d);
@@ -364,8 +361,8 @@ cleanup(int slidesonly)
 	}
 
 	if (slides) {
-		for (i = 0; i < slidecount; i++) {
-			for (j = 0; j < slides[i].linecount; j++)
+		for (unsigned int i = 0; i < slidecount; i++) {
+			for (unsigned int j = 0; j < slides[i].linecount; j++)
 				free(slides[i].lines[j]);
 			free(slides[i].lines);
 			if (slides[i].img)
@@ -430,14 +427,15 @@ void
 load(FILE *fp)
 {
 	static size_t size = 0;
-	size_t blen, maxlines;
-	char buf[BUFSIZ], *p;
+	unsigned blen;
+	char buf[BUFSIZ];
 	Slide *s;
 
 	skipBom(fp);
 
 	/* read each line from fp and add it to the item list */
 	while (1) {
+		char* p;
 		/* eat consecutive empty lines */
 		while ((p = fgets(buf, sizeof(buf), fp)))
 			if (strcmp(buf, "\n") != 0 && buf[0] != '#')
@@ -450,7 +448,7 @@ load(FILE *fp)
 				die("sent: Unable to reallocate %u bytes:", size);
 
 		/* read one slide */
-		maxlines = 0;
+		unsigned maxlines = 0;
 		memset((s = &slides[slidecount]), 0, sizeof(Slide));
 		do {
 			/* if there's a leading null, we can't do blen-1 */
@@ -545,7 +543,7 @@ run()
 void
 xdraw()
 {
-	unsigned int height, width, i;
+	unsigned int height, width;
 	Image *im = slides[idx].img;
 
 	getfontsize(&slides[idx], &width, &height);
@@ -553,7 +551,7 @@ xdraw()
 
 	if (!im) {
 		drw_rect(d, 0, 0, xw.w, xw.h, 1, 1);
-		for (i = 0; i < slides[idx].linecount; i++)
+		for (unsigned int i = 0; i < slides[idx].linecount; i++)
 			drw_text(d,
 			         (xw.w - width) / 2,
 			         (xw.h - height) / 2 + i * linespacing * d->fonts->h,

@@ -428,6 +428,10 @@ load(FILE *fp)
 		maxlines = 0;
 		memset((s = &slides[slidecount]), 0, sizeof(Slide));
 		do {
+			/* if there's a leading null, we can't do blen-1 */
+			if (buf[0] == '\0')
+				continue;
+
 			if (buf[0] == '#')
 				continue;
 
